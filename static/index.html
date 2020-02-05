@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>APIs</title>
+</head>
+<body>
+    <h1>APIs</h1>
+    <hr/>
+    <h2>static</h2>
+    <ul type="square">
+        <li>角色</li>
+    </ul>
+    <hr/>
+    <h2>user</h2>
+    <ul type="square">
+        <li><a href="javascript:void(0);" onclick="getAuthCode()">获取验证码</a>
+            <label for="phone"></label>
+            <input type="text" name="phone" id="phone" placeholder="phone"/>
+        </li>
+        <li>
+            <a href="javascript:void(0);" onclick="register()">注册</a>
+            <label for="nickname"></label>
+            <input type="text" name="nickname" id="nickname" placeholder="nickname"/>
+            <label for="authCode"></label>
+            <input type="text" name="authCode" id="authCode" placeholder="authCode"/>
+        </li>
+        <li>
+            <a href="javascript:void(0);" onclick="signIn()">登录</a>
+            <label for="identity"></label>
+            <input type="text" name="identity" id="identity" placeholder="identity"/>
+            <label for="authType"></label>
+            <select name="auth_type" id="authType">
+                <option selected>登录方式</option>
+                <option value="Username">用户名</option>
+                <option value="Phone">手机号</option>
+            </select>
+        </li>
+        <li><a href="javascript:void(0);" onclick="signOut()">登出</a></li>
+        <li><a href="javascript:void(0);" onclick="info()">获取个人信息</a></li>
+        <li><a href="javascript:void(0);" onclick="role()">获取个人角色</a></li>
+        <li><a href="javascript:void(0);" onclick="perm()">获取个人权限</a></li>
+        <li><a href="javascript:void(0);" onclick="auth()">获取个人登陆方式</a></li>
+    </ul>
+
+    <!-- script -->
+    <script src="js/jquery-3.4.1.min.js"></script>
+    <script>
+        function doPost(url, json, name) {
+            $.ajax({
+                type: "POST",
+                url: url,
+                contentType: "application/json; charset=utf-8",
+                data: JSON.stringify(json),
+                dataType: "json",
+                success: function (message) {
+                    alert(name + "成功: " + JSON.stringify(message));
+                },
+                error: function (message) {
+                    alert(name + "失败: " + JSON.stringify(message));
+                }
+            });
+        }
+        function doGet(url, name) {
+            $.ajax({
+                type: "GET",
+                url: url,
+                success: function (message) {
+                    alert(name + "成功: " + JSON.stringify(message));
+                },
+                error: function (message) {
+                    alert(name + "失败: " + JSON.stringify(message));
+                }
+            });
+        }
+
+        function getAuthCode() {
+            doPost("/user/authCode", {"phone": $("#phone").val()}, "获取短信验证码");
+        }
+
+        function register() {
+            doPost("/user/register", {"phone": $("#phone").val(),"nickname": $("#nickname").val(),"auth_code": $("#authCode").val()}, "注册");
+        }
+
+        function signIn() {
+            doPost("/user/signIn", {"auth_type": $("#authType").val(),
+                "identity": $("#identity").val(),
+                "credential1" : ""}, "登录");
+        }
+
+        function signOut() {
+            doPost("/user/signOut", {}, "登出");
+        }
+
+        function info() {
+            doGet("/user/info", "获取个人信息");
+        }
+
+        function role() {
+            doGet("/user/role", "获取个人角色");
+        }
+
+        function perm() {
+            doGet("/user/perm", "获取个人权限");
+        }
+
+        function auth() {
+            doGet("/user/auth", "获取个人登陆方式");
+        }
+    </script>
+</body>
+</html>

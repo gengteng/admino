@@ -1,0 +1,25 @@
+{
+  "db": {
+    "host": "example.com",
+    "database": "dbname",
+    "username": "dbuser",
+    "password": "123456"
+  },
+  "redis": {
+    "url": "redis://127.0.0.1/"
+  },
+  "http": {
+    "addrs": [
+      "0.0.0.0:30000",
+      "[::]:30006"
+    ],
+    "secure-key": "1124bebfc32348b7b33bd7f99e410db5d5bbb79236c44473ad45ad3dac383abc"
+  },
+  "log": {
+    "level": "INFO"
+  },
+  "tencent": {
+    "secret-id": "",
+    "secret-key": ""
+  }
+}
