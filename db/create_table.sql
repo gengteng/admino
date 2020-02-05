@@ -37,7 +37,7 @@ create table user_info
         unique (username)
 );
 
-comment on table user_info is '用户信息表';
+comment on table user_info is '用户表';
 comment on column user_info.id is '用户ID';
 comment on column user_info.username is '用户名';
 comment on column user_info.nickname is '用户昵称';

@@ -1,5 +1,7 @@
 use crate::error::XqlError;
-use crate::model::{AuthParams, GetAuthParams, Id, RegisterParams, RolePerm, UserAuth, UserInfo};
+use crate::model::{
+    AuthParams, GetAuthCodeParams, Id, RegisterParams, RolePerm, UserAuth, UserInfo,
+};
 use crate::service::{user::*, IntoJsonResult};
 use crate::util::identity::Identity;
 use crate::util::AuthCode;
@@ -22,7 +24,7 @@ pub fn get_user_scope() -> Scope {
 }
 
 async fn get_auth_code(
-    get_auth_param: Json<GetAuthParams>,
+    get_auth_param: Json<GetAuthCodeParams>,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<Json<AuthCode>, XqlError> {
     let auth_code = AuthCode::default();
