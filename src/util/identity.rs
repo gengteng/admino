@@ -1,4 +1,4 @@
-use crate::error::XqlError;
+use crate::error::Error;
 use actix_web::cookie::{Cookie, CookieJar, Key};
 use actix_web::dev::{Payload, Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::http::{header, HeaderValue};
@@ -248,13 +248,13 @@ where
                     let mut conn = pool
                         .get()
                         .await
-                        .map_err(XqlError::from)
+                        .map_err(Error::from)
                         .map_err(ActixError::from)?;
                     let id: Option<String> = cmd("GET")
                         .arg(make_redis_key(token))
                         .query_async(&mut conn)
                         .await
-                        .map_err(XqlError::from)
+                        .map_err(Error::from)
                         .map_err(ActixError::from)?;
 
                     if let Some(identity) = id {
@@ -291,13 +291,13 @@ where
                                 let mut conn = pool
                                     .get()
                                     .await
-                                    .map_err(XqlError::from)
+                                    .map_err(Error::from)
                                     .map_err(ActixError::from)?;
                                 cmd("DEL")
                                     .arg(make_redis_key(token))
                                     .execute_async(&mut conn)
                                     .await
-                                    .map_err(XqlError::from)
+                                    .map_err(Error::from)
                                     .map_err(ActixError::from)?;
                             }
 
@@ -317,7 +317,7 @@ where
                             let mut conn = pool
                                 .get()
                                 .await
-                                .map_err(XqlError::from)
+                                .map_err(Error::from)
                                 .map_err(ActixError::from)?;
                             cmd("SETEX")
                                 .arg(&make_redis_key(&token))
@@ -325,7 +325,7 @@ where
                                 .arg(&si.identity)
                                 .execute_async(&mut conn)
                                 .await
-                                .map_err(XqlError::from)
+                                .map_err(Error::from)
                                 .map_err(ActixError::from)?;
 
                             // 设置 cookie

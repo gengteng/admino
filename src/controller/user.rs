@@ -1,7 +1,5 @@
-use crate::error::XqlError;
-use crate::model::{
-    AuthParams, GetAuthCodeParams, Id, RegisterParams, RolePerm, UserAuth, UserInfo,
-};
+use crate::error::Error;
+use crate::model::*;
 use crate::service::{user::*, IntoJsonResult};
 use crate::util::identity::Identity;
 use crate::util::AuthCode;
@@ -26,7 +24,7 @@ pub fn get_user_scope() -> Scope {
 async fn get_auth_code(
     get_auth_param: Json<GetAuthCodeParams>,
     redis_pool: web::Data<RedisPool>,
-) -> Result<Json<AuthCode>, XqlError> {
+) -> Result<Json<AuthCode>, Error> {
     let auth_code = AuthCode::default();
 
     // TODO: send sms to phone
@@ -41,16 +39,13 @@ async fn register(
     reg_param: Json<RegisterParams>,
     redis_pool: web::Data<RedisPool>,
     pg_pool: web::Data<PgPool>,
-) -> Result<Json<UserInfo>, XqlError> {
+) -> Result<Json<UserInfo>, Error> {
     let reg_param = reg_param.into_inner();
 
     let mut redis_client = redis_pool.get().await?;
 
     if !check_auth_code(&mut redis_client, &reg_param).await? {
-        return Err(XqlError::static_custom(
-            StatusCode::BAD_REQUEST,
-            "验证码错误",
-        ));
+        return Err(Error::static_custom(StatusCode::BAD_REQUEST, "验证码错误"));
     }
 
     let pg_client = pg_pool.get().await?;
@@ -61,70 +56,70 @@ async fn sign_in(
     auth_param: Json<AuthParams>,
     identity: Identity,
     pg_pool: web::Data<PgPool>,
-) -> Result<Json<UserInfo>, XqlError> {
+) -> Result<Json<UserInfo>, Error> {
     let pg_client = pg_pool.get().await?;
     let user_info = login(&pg_client, auth_param.into_inner())
         .await
-        .or_else(|_| Err(XqlError::Status(StatusCode::UNAUTHORIZED)))?;
+        .or_else(|_| Err(Error::Status(StatusCode::UNAUTHORIZED)))?;
 
     identity.sign_in(user_info.id)?;
 
     Ok(Json(user_info))
 }
 
-async fn sign_out(identity: Identity) -> Result<&'static str, XqlError> {
+async fn sign_out(identity: Identity) -> Result<&'static str, Error> {
     if identity.is_user() {
         identity.sign_out();
         Ok("logged out")
     } else {
-        Err(XqlError::Status(StatusCode::UNAUTHORIZED))
+        Err(Error::Status(StatusCode::UNAUTHORIZED))
     }
 }
 
 async fn get_user_info(
     identity: Identity,
     pg_pool: web::Data<PgPool>,
-) -> Result<Json<UserInfo>, XqlError> {
+) -> Result<Json<UserInfo>, Error> {
     if let Some(user_id) = identity.get() {
         let pg_client = pg_pool.get().await?;
         query_user_by_id(&pg_client, user_id).await.json()
     } else {
-        Err(XqlError::Status(StatusCode::UNAUTHORIZED))
+        Err(Error::Status(StatusCode::UNAUTHORIZED))
     }
 }
 
 async fn get_user_role(
     identity: Identity,
     pg_pool: web::Data<PgPool>,
-) -> Result<Json<Vec<Id>>, XqlError> {
+) -> Result<Json<Vec<Id>>, Error> {
     if let Some(user_id) = identity.get() {
         let pg_client = pg_pool.get().await?;
         query_user_roles(&pg_client, user_id).await.json()
     } else {
-        Err(XqlError::Status(StatusCode::UNAUTHORIZED))
+        Err(Error::Status(StatusCode::UNAUTHORIZED))
     }
 }
 
 async fn get_user_auth(
     identity: Identity,
     pg_pool: web::Data<PgPool>,
-) -> Result<Json<Vec<UserAuth>>, XqlError> {
+) -> Result<Json<Vec<UserAuth>>, Error> {
     if let Some(user_id) = identity.get() {
         let pg_client = pg_pool.get().await?;
         query_user_auth(&pg_client, user_id).await.json()
     } else {
-        Err(XqlError::Status(StatusCode::UNAUTHORIZED))
+        Err(Error::Status(StatusCode::UNAUTHORIZED))
     }
 }
 
 async fn get_user_perm(
     identity: Identity,
     pg_pool: web::Data<PgPool>,
-) -> Result<Json<Vec<RolePerm>>, XqlError> {
+) -> Result<Json<Vec<RolePermission>>, Error> {
     if let Some(user_id) = identity.get() {
         let pg_client = pg_pool.get().await?;
         query_user_perm(&pg_client, user_id).await.json()
     } else {
-        Err(XqlError::Status(StatusCode::UNAUTHORIZED))
+        Err(Error::Status(StatusCode::UNAUTHORIZED))
     }
 }

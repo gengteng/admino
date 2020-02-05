@@ -1,4 +1,4 @@
-use crate::error::XqlError;
+use crate::error::Error;
 use deadpool_postgres::Config as PgConfig;
 use deadpool_redis::Config as RedisConfig;
 use log::Level;
@@ -18,7 +18,7 @@ pub struct Opts {
 }
 
 impl Opts {
-    pub async fn open<P: AsRef<Path>>(path: P) -> Result<Self, XqlError> {
+    pub async fn open<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
         let mut file = File::open(path.as_ref()).await?;
         let mut vec = Vec::with_capacity(file.metadata().await?.len() as usize);
         file.read_to_end(&mut vec).await?;

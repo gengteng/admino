@@ -1,5 +1,5 @@
-use crate::error::XqlError;
-use crate::model::{AuthParams, Id, RegisterParams, RolePerm, UserAuth, UserInfo, UserRole};
+use crate::error::Error;
+use crate::model::*;
 use crate::service::RedisClient;
 use crate::util::{AuthCode, Phone};
 use deadpool_postgres::Client as PgClient;
@@ -13,7 +13,7 @@ pub async fn cache_auth_code(
     redis: &mut RedisClient,
     phone: &Phone,
     auth_code: &AuthCode,
-) -> Result<(), XqlError> {
+) -> Result<(), Error> {
     Ok(cmd("SETEX")
         .arg(format!("{}{}", AUTH_CODE_KEY, phone))
         .arg(AUTH_CODE_EXPIRE)
@@ -25,7 +25,7 @@ pub async fn cache_auth_code(
 pub async fn check_auth_code(
     redis: &mut RedisClient,
     register: &RegisterParams,
-) -> Result<bool, XqlError> {
+) -> Result<bool, Error> {
     let auth_code: String = cmd("GET")
         .arg(format!("{}{}", AUTH_CODE_KEY, register.phone))
         .query_async(redis)
@@ -34,7 +34,7 @@ pub async fn check_auth_code(
     Ok(auth_code == register.auth_code)
 }
 
-pub async fn create_user(pg: &PgClient, register: &RegisterParams) -> Result<UserInfo, XqlError> {
+pub async fn create_user(pg: &PgClient, register: &RegisterParams) -> Result<UserInfo, Error> {
     Ok(UserInfo::from_row(
         pg.query_one(
             "insert into user_info(nickname, phone) values($1, $2) returning *",
@@ -44,7 +44,7 @@ pub async fn create_user(pg: &PgClient, register: &RegisterParams) -> Result<Use
     )?)
 }
 
-pub async fn login(pg: &PgClient, auth_info: AuthParams) -> Result<UserInfo, XqlError> {
+pub async fn login(pg: &PgClient, auth_info: AuthParams) -> Result<UserInfo, Error> {
     let row = pg
         .query_one("select * from user_info where id in (select user_id from user_auth where auth_type = $1 and identity = $2)",
                    &[&auth_info.auth_type, &auth_info.identity]).await?;
@@ -52,14 +52,14 @@ pub async fn login(pg: &PgClient, auth_info: AuthParams) -> Result<UserInfo, Xql
     Ok(UserInfo::from_row(row)?)
 }
 
-pub async fn query_user_by_id(pg: &PgClient, id: Id) -> Result<UserInfo, XqlError> {
+pub async fn query_user_by_id(pg: &PgClient, id: Id) -> Result<UserInfo, Error> {
     let row = pg
         .query_one("select * from user_info where id = $1", &[&id])
         .await?;
     Ok(UserInfo::from_row(row)?)
 }
 
-pub async fn query_user_roles(pg: &PgClient, user_id: Id) -> Result<Vec<Id>, XqlError> {
+pub async fn query_user_roles(pg: &PgClient, user_id: Id) -> Result<Vec<Id>, Error> {
     let rows = pg
         .query("select * from user_role where user_id = $1", &[&user_id])
         .await?;
@@ -73,7 +73,7 @@ pub async fn query_user_roles(pg: &PgClient, user_id: Id) -> Result<Vec<Id>, Xql
     Ok(user_roles)
 }
 
-pub async fn query_user_auth(pg: &PgClient, user_id: Id) -> Result<Vec<UserAuth>, XqlError> {
+pub async fn query_user_auth(pg: &PgClient, user_id: Id) -> Result<Vec<UserAuth>, Error> {
     let rows = pg
         .query("select * from user_auth where user_id = $1", &[&user_id])
         .await?;
@@ -87,15 +87,15 @@ pub async fn query_user_auth(pg: &PgClient, user_id: Id) -> Result<Vec<UserAuth>
     Ok(auth)
 }
 
-pub async fn query_user_perm(pg: &PgClient, user_id: Id) -> Result<Vec<RolePerm>, XqlError> {
+pub async fn query_user_perm(pg: &PgClient, user_id: Id) -> Result<Vec<RolePermission>, Error> {
     let rows = pg
-        .query("select * from role_perm where role_id in (select role_id from user_role where user_id = $1)", &[&user_id])
+        .query("select * from role_permission where role_id in (select role_id from user_role where user_id = $1)", &[&user_id])
         .await?;
 
     let mut perms = Vec::with_capacity(rows.len());
 
     for row in rows.iter() {
-        perms.push(RolePerm::from_row_ref(row)?);
+        perms.push(RolePermission::from_row_ref(row)?);
     }
 
     Ok(perms)

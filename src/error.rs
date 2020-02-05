@@ -5,7 +5,7 @@ use serde::Serialize;
 use std::fmt;
 
 #[derive(Debug, Display, From)]
-pub enum XqlError {
+pub enum Error {
     Io(std::io::Error),
     Borrow(std::cell::BorrowError),
     BorrowMut(std::cell::BorrowMutError),
@@ -29,9 +29,9 @@ pub enum XqlError {
     Http(HttpError),
 }
 
-impl XqlError {
+impl Error {
     pub fn custom(status: StatusCode, cause: String) -> Self {
-        XqlError::Http(HttpError { status, cause })
+        Error::Http(HttpError { status, cause })
     }
 
     pub fn static_custom(status: StatusCode, cause: &str) -> Self {
@@ -56,24 +56,24 @@ struct ErrorResponse {
     cause: String,
 }
 
-impl From<&XqlError> for ErrorResponse {
-    fn from(e: &XqlError) -> Self {
+impl From<&Error> for ErrorResponse {
+    fn from(e: &Error) -> Self {
         Self {
             cause: match e {
-                XqlError::Text(s) => s.clone(),
-                XqlError::Static(s) => (*s).to_string(),
-                XqlError::Http(he) => he.cause.clone(),
+                Error::Text(s) => s.clone(),
+                Error::Static(s) => (*s).to_string(),
+                Error::Http(he) => he.cause.clone(),
                 _ => format!("{}", e),
             },
         }
     }
 }
 
-impl actix_web::ResponseError for XqlError {
+impl actix_web::ResponseError for Error {
     fn status_code(&self) -> StatusCode {
         match self {
-            XqlError::Http(ce) => ce.status,
-            XqlError::Status(s) => s.to_owned(),
+            Error::Http(ce) => ce.status,
+            Error::Status(s) => s.to_owned(),
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }

@@ -1,5 +1,5 @@
 use crate::controller::user::get_user_scope;
-use crate::error::XqlError;
+use crate::error::Error;
 use crate::util::identity::IdentityFactory;
 use actix_web::client::Client as HttpClient;
 use actix_web::{middleware, App, HttpServer};
@@ -22,7 +22,7 @@ extern crate derive_more;
 extern crate postgres_types;
 
 #[actix_rt::main]
-async fn main() -> Result<(), error::XqlError> {
+async fn main() -> Result<(), error::Error> {
     let Opts {
         db,
         redis,
@@ -36,14 +36,14 @@ async fn main() -> Result<(), error::XqlError> {
     env_logger::init();
 
     let pg_pool = PgConfig::from(db).create_pool(NoTls).map_err(|e| {
-        XqlError::Text(format!(
+        Error::Text(format!(
             "An error occurred while initializing the postgres connection pool: {}",
             e
         ))
     })?;
 
     let redis_pool = RedisConfig::from(redis).create_pool().map_err(|e| {
-        XqlError::Text(format!(
+        Error::Text(format!(
             "An error occurred while initializing the redis connection pool: {}",
             e
         ))

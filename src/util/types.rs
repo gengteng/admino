@@ -1,11 +1,11 @@
-use crate::error::XqlError;
+use crate::error::Error;
 use phonenumber::{Mode, PhoneNumber};
 use postgres_types::private::BytesMut;
 use postgres_types::{FromSql, IsNull, ToSql, Type};
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-use std::error::Error;
+use std::error::Error as StdError;
 use std::fmt;
 use std::str::FromStr;
 
@@ -32,18 +32,18 @@ impl Default for AuthCode {
 pub struct Phone(PhoneNumber);
 
 impl FromStr for Phone {
-    type Err = XqlError;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match PhoneNumber::from_str(s) {
             Ok(number) if number.is_valid() => Ok(Self(number)),
-            _ => Err(XqlError::Static("invalid phone number format")),
+            _ => Err(Error::Static("invalid phone number format")),
         }
     }
 }
 
 impl Phone {
-    pub fn new(src: &str) -> Result<Self, XqlError> {
+    pub fn new(src: &str) -> Result<Self, Error> {
         Self::from_str(src)
     }
 
@@ -58,8 +58,10 @@ impl fmt::Display for Phone {
     }
 }
 
+type SqlException = Box<dyn StdError + Sync + Send>;
+
 impl<'a> FromSql<'a> for Phone {
-    fn from_sql(ty: &Type, raw: &'a [u8]) -> Result<Self, Box<dyn Error + Sync + Send>> {
+    fn from_sql(ty: &Type, raw: &'a [u8]) -> Result<Self, SqlException> {
         let s = <&str as FromSql>::from_sql(ty, raw)?;
         let pn = PhoneNumber::from_str(s)?;
         Ok(Phone(pn))
@@ -71,7 +73,7 @@ impl<'a> FromSql<'a> for Phone {
 }
 
 impl ToSql for Phone {
-    fn to_sql(&self, ty: &Type, out: &mut BytesMut) -> Result<IsNull, Box<dyn Error + Sync + Send>>
+    fn to_sql(&self, ty: &Type, out: &mut BytesMut) -> Result<IsNull, SqlException>
     where
         Self: Sized,
     {
