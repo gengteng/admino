@@ -4,7 +4,7 @@ use deadpool_redis::Config as RedisConfig;
 use log::Level;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use tokio::fs::File;
 use tokio::prelude::*;
 
@@ -14,7 +14,6 @@ pub struct Opts {
     pub redis: RedisOpts,
     pub http: HttpOpts,
     pub log: LogOpts,
-    pub tencent: TencentOpts,
 }
 
 impl Opts {
@@ -62,6 +61,7 @@ impl From<RedisOpts> for RedisConfig {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct HttpOpts {
     pub addrs: Vec<SocketAddr>,
+    pub html: PathBuf,
     #[serde(rename = "secure-key", with = "hex_serde")]
     pub secure_key: [u8; 32],
 }
@@ -69,12 +69,4 @@ pub struct HttpOpts {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LogOpts {
     pub level: Level,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct TencentOpts {
-    #[serde(rename = "secret-id")]
-    pub secret_id: String,
-    #[serde(rename = "secret-key")]
-    pub secret_key: String,
 }

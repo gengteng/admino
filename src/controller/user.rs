@@ -16,9 +16,9 @@ pub fn get_user_scope() -> Scope {
         .service(web::resource("/signIn").route(web::post().to(sign_in)))
         .service(web::resource("/signOut").route(web::post().to(sign_out)))
         .service(web::resource("/info").route(web::get().to(get_user_info)))
-        .service(web::resource("/role").route(web::get().to(get_user_role)))
-        .service(web::resource("/perm").route(web::get().to(get_user_perm)))
-        .service(web::resource("/auth").route(web::get().to(get_user_auth)))
+        .service(web::resource("/roles").route(web::get().to(get_user_role)))
+        .service(web::resource("/permissions").route(web::get().to(get_user_perm)))
+        .service(web::resource("/authentications").route(web::get().to(get_user_auth)))
 }
 
 async fn get_auth_code(
@@ -53,12 +53,12 @@ async fn register(
 }
 
 async fn sign_in(
-    auth_param: Json<AuthParams>,
+    sign_in_params: Json<SignInParams>,
     identity: Identity,
     pg_pool: web::Data<PgPool>,
 ) -> Result<Json<UserInfo>, Error> {
     let pg_client = pg_pool.get().await?;
-    let user_info = login(&pg_client, auth_param.into_inner())
+    let user_info = login(&pg_client, sign_in_params.into_inner())
         .await
         .or_else(|_| Err(Error::Status(StatusCode::UNAUTHORIZED)))?;
 
@@ -99,6 +99,10 @@ async fn get_user_role(
         Err(Error::Status(StatusCode::UNAUTHORIZED))
     }
 }
+//
+//async fn get_roles(identity: Identity, pager: web::Json<Condition>, pg_pool: web::Data<PgPool>) -> Result<Json<Role>, Error> {
+//    Err(Error::Status(StatusCode::UNAUTHORIZED))
+//}
 
 async fn get_user_auth(
     identity: Identity,

@@ -39,6 +39,8 @@ impl Error {
     }
 }
 
+impl std::error::Error for Error {}
+
 #[derive(Debug)]
 pub struct HttpError {
     status: StatusCode,

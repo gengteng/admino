@@ -26,10 +26,11 @@ pub async fn check_auth_code(
     redis: &mut RedisClient,
     register: &RegisterParams,
 ) -> Result<bool, Error> {
-    let auth_code: String = cmd("GET")
-        .arg(format!("{}{}", AUTH_CODE_KEY, register.phone))
-        .query_async(redis)
-        .await?;
+    let key = format!("{}{}", AUTH_CODE_KEY, register.phone);
+
+    let auth_code: String = cmd("GET").arg(&key).query_async(redis).await?;
+
+    cmd("DEL").arg(&key).execute_async(redis).await?;
 
     Ok(auth_code == register.auth_code)
 }
@@ -44,7 +45,7 @@ pub async fn create_user(pg: &PgClient, register: &RegisterParams) -> Result<Use
     )?)
 }
 
-pub async fn login(pg: &PgClient, auth_info: AuthParams) -> Result<UserInfo, Error> {
+pub async fn login(pg: &PgClient, auth_info: SignInParams) -> Result<UserInfo, Error> {
     let row = pg
         .query_one("select * from user_info where id in (select user_id from user_auth where auth_type = $1 and identity = $2)",
                    &[&auth_info.auth_type, &auth_info.identity]).await?;

@@ -28,7 +28,6 @@ async fn main() -> Result<(), error::Error> {
         redis,
         http,
         log,
-        tencent,
     } = Opts::open("config.json").await?;
 
     // 设置日志
@@ -52,7 +51,6 @@ async fn main() -> Result<(), error::Error> {
     let http_config = http.clone();
     HttpServer::new(move || {
         App::new()
-            .data(tencent.clone())
             .data(HttpClient::new())
             .data(pg_pool.clone())
             .data(redis_pool.clone())
@@ -61,7 +59,7 @@ async fn main() -> Result<(), error::Error> {
                 IdentityFactory::new(&http_config.secure_key, redis_pool.clone()).name("identity"),
             )
             .service(get_user_scope())
-            .service(actix_files::Files::new("/", "./static").index_file("index.html"))
+            .service(actix_files::Files::new("/", &http_config.html).index_file("index.html"))
     })
     .bind(http.addrs.as_slice())?
     .run()
