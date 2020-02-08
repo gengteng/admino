@@ -10,15 +10,3 @@ pub use role::*;
 pub use user::*;
 
 pub type Id = i64;
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
-pub struct Pager {
-    rows: i64,
-    page: i64,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
-pub struct Condition {
-    pager: Pager,
-    order_by: Vec<String>,
-}

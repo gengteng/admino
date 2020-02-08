@@ -1,5 +1,5 @@
 use super::*;
-use crate::util::Phone;
+use crate::util::types::Phone;
 use chrono::{NaiveDate, NaiveDateTime};
 
 /// 用户

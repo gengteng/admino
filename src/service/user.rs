@@ -1,10 +1,10 @@
 use crate::error::Error;
 use crate::model::*;
-use crate::service::RedisClient;
-use crate::util::{AuthCode, Phone};
-use deadpool_postgres::Client as PgClient;
+use crate::util::types::{AuthCode, Phone};
+use super::{PgClient, RedisClient};
 use deadpool_redis::cmd;
 use tokio_pg_mapper::FromTokioPostgresRow;
+use log::*;
 
 const AUTH_CODE_KEY: &str = "user:authCode:";
 const AUTH_CODE_EXPIRE: &str = "300";
@@ -30,7 +30,10 @@ pub async fn check_auth_code(
 
     let auth_code: String = cmd("GET").arg(&key).query_async(redis).await?;
 
-    cmd("DEL").arg(&key).execute_async(redis).await?;
+    match cmd("DEL").arg(&key).execute_async(redis).await {
+        Err(e) => error!("从 Redis 中删除 {} 时发生错误: {}", key, e),
+        _ => {}
+    }
 
     Ok(auth_code == register.auth_code)
 }

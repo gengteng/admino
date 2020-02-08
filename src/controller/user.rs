@@ -1,13 +1,12 @@
 use crate::error::Error;
 use crate::model::*;
-use crate::service::{user::*, IntoJsonResult};
+use crate::service::user::*;
 use crate::util::identity::Identity;
-use crate::util::AuthCode;
+use crate::util::types::AuthCode;
 use actix_web::http::StatusCode;
 use actix_web::web::Json;
 use actix_web::{web, Scope};
-use deadpool_postgres::Pool as PgPool;
-use deadpool_redis::Pool as RedisPool;
+use super::{PgPool, RedisPool, IntoJsonResult};
 
 pub fn get_user_scope() -> Scope {
     web::scope("/user")

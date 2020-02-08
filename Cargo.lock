@@ -301,6 +301,7 @@ dependencies = [
  "failure",
  "futures 0.3.3",
  "hex-serde",
+ "itertools",
  "log",
  "phonenumber",
  "postgres-types",

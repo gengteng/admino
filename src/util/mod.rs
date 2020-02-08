@@ -1,4 +1,3 @@
 pub mod identity;
-mod types;
-
-pub use types::*;
+pub mod types;
+pub mod db;

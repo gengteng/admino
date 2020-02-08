@@ -7,6 +7,7 @@ use deadpool_postgres::Config as PgConfig;
 use deadpool_redis::Config as RedisConfig;
 use opt::Opts;
 use tokio_postgres::NoTls;
+use crate::controller::role::get_role_scope;
 
 mod controller;
 mod error;
@@ -59,6 +60,7 @@ async fn main() -> Result<(), error::Error> {
                 IdentityFactory::new(&http_config.secure_key, redis_pool.clone()).name("identity"),
             )
             .service(get_user_scope())
+            .service(get_role_scope())
             .service(actix_files::Files::new("/", &http_config.html).index_file("index.html"))
     })
     .bind(http.addrs.as_slice())?

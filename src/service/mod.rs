@@ -1,17 +1,5 @@
-use crate::error::Error;
-use actix_web::web::Json;
-use deadpool_redis::ConnectionWrapper;
-
 pub mod user;
+pub mod role;
 
-pub type RedisClient = deadpool::managed::Object<ConnectionWrapper, redis::RedisError>;
-
-pub trait IntoJsonResult<T> {
-    fn json(self) -> Result<Json<T>, Error>;
-}
-
-impl<T> IntoJsonResult<T> for Result<T, Error> {
-    fn json(self) -> Result<Json<T>, Error> {
-        self.map(Json)
-    }
-}
+pub type RedisClient = deadpool::managed::Object<deadpool_redis::ConnectionWrapper, redis::RedisError>;
+pub type PgClient = deadpool_postgres::Client;
