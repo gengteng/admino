@@ -6,8 +6,8 @@ use super::*;
 pub struct Role {
     pub id: Id,
     pub name: String,
-    max_user: i64,
-    max_permission: i64,
+    max_user: Option<i64>,
+    max_permission: Option<i64>,
 }
 
 /// 角色继承关系

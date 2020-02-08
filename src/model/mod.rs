@@ -10,3 +10,8 @@ pub use role::*;
 pub use user::*;
 
 pub type Id = i64;
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+pub struct Count {
+    pub count: i64,
+}

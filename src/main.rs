@@ -1,3 +1,4 @@
+use crate::controller::role::get_role_scope;
 use crate::controller::user::get_user_scope;
 use crate::error::Error;
 use crate::util::identity::IdentityFactory;
@@ -7,7 +8,6 @@ use deadpool_postgres::Config as PgConfig;
 use deadpool_redis::Config as RedisConfig;
 use opt::Opts;
 use tokio_postgres::NoTls;
-use crate::controller::role::get_role_scope;
 
 mod controller;
 mod error;

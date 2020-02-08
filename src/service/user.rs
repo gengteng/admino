@@ -1,10 +1,10 @@
+use super::{PgClient, RedisClient};
 use crate::error::Error;
 use crate::model::*;
 use crate::util::types::{AuthCode, Phone};
-use super::{PgClient, RedisClient};
 use deadpool_redis::cmd;
-use tokio_pg_mapper::FromTokioPostgresRow;
 use log::*;
+use tokio_pg_mapper::FromTokioPostgresRow;
 
 const AUTH_CODE_KEY: &str = "user:authCode:";
 const AUTH_CODE_EXPIRE: &str = "300";

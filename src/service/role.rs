@@ -1,26 +1,24 @@
-use deadpool_postgres::Client as PgClient;
-use actix_web::web;
 use crate::error::Error;
-use crate::util::db::QueryCondition;
-use crate::model::Role;
+use crate::model::{Count, Id, Role};
+use crate::util::db::Pager;
+use deadpool_postgres::Client as PgClient;
 use tokio_pg_mapper::FromTokioPostgresRow;
-use itertools::Itertools;
 
-pub async fn query_roles(pg_client: &PgClient, condition: web::Json<QueryCondition>) -> Result<Vec<Role>, Error> {
-    let condition = condition.into_inner();
+pub async fn query_roles_count(pg_client: &PgClient) -> Result<Count, Error> {
+    Ok(Count {
+        count: pg_client
+            .query_one("select count(1) from role", &[])
+            .await?
+            .get(0),
+    })
+}
 
-    let sql = {
-        let mut sql = String::from("select * from roles limit $1 offset $2");
-        if let Some(order_by) = condition.order_by {
-            sql += " order by ";
-            sql += &order_by.iter().join(",");
-        }
-        sql
-    };
-
+pub async fn query_roles(pg_client: &PgClient, pager: &Pager) -> Result<Vec<Role>, Error> {
     let rows = pg_client
-        .query(sql.as_str(),
-                    &[&condition.pager.limit(), &condition.pager.offset()])
+        .query(
+            "select * from role limit $1 offset $2",
+            &[&pager.limit(), &pager.offset()],
+        )
         .await?;
 
     let mut roles = Vec::with_capacity(rows.len());
@@ -30,4 +28,12 @@ pub async fn query_roles(pg_client: &PgClient, condition: web::Json<QueryConditi
     }
 
     Ok(roles)
+}
+
+pub async fn query_role_by_id(pg_client: &PgClient, id: Id) -> Result<Role, Error> {
+    Ok(Role::from_row_ref(
+        &pg_client
+            .query_one("select * from role where id = $1", &[&id])
+            .await?,
+    )?)
 }

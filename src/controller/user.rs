@@ -1,3 +1,4 @@
+use super::{IntoJsonResult, PgPool, RedisPool};
 use crate::error::Error;
 use crate::model::*;
 use crate::service::user::*;
@@ -6,7 +7,6 @@ use crate::util::types::AuthCode;
 use actix_web::http::StatusCode;
 use actix_web::web::Json;
 use actix_web::{web, Scope};
-use super::{PgPool, RedisPool, IntoJsonResult};
 
 pub fn get_user_scope() -> Scope {
     web::scope("/user")
