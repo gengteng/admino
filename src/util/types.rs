@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::error::Detail;
 use phonenumber::{Mode, PhoneNumber};
 use postgres_types::private::BytesMut;
 use postgres_types::{FromSql, IsNull, ToSql, Type};
@@ -32,18 +32,18 @@ impl Default for AuthCode {
 pub struct Phone(PhoneNumber);
 
 impl FromStr for Phone {
-    type Err = Error;
+    type Err = Detail;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match PhoneNumber::from_str(s) {
             Ok(number) if number.is_valid() => Ok(Self(number)),
-            _ => Err(Error::Static("invalid phone number format")),
+            _ => Err(Detail::Static("invalid phone number format")),
         }
     }
 }
 
 impl Phone {
-    pub fn new(src: &str) -> Result<Self, Error> {
+    pub fn new(src: &str) -> Result<Self, Detail> {
         Self::from_str(src)
     }
 

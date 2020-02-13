@@ -1,10 +1,9 @@
 use super::{IntoJsonResult, PgPool, RedisPool};
-use crate::error::Error;
+use crate::error::{Error, Kind};
 use crate::model::*;
 use crate::service::user::*;
 use crate::util::identity::Identity;
 use crate::util::types::AuthCode;
-use actix_web::http::StatusCode;
 use actix_web::web::Json;
 use actix_web::{web, Scope};
 
@@ -44,7 +43,7 @@ async fn register(
     let mut redis_client = redis_pool.get().await?;
 
     if !check_auth_code(&mut redis_client, &reg_param).await? {
-        return Err(Error::static_custom(StatusCode::BAD_REQUEST, "验证码错误"));
+        return Err(Kind::INVALID_AUTH_CODE.into());
     }
 
     let pg_client = pg_pool.get().await?;
@@ -59,7 +58,7 @@ async fn sign_in(
     let pg_client = pg_pool.get().await?;
     let user_info = login(&pg_client, sign_in_params.into_inner())
         .await
-        .or_else(|_| Err(Error::Status(StatusCode::UNAUTHORIZED)))?;
+        .or_else(|_| Err(Error::kind(Kind::INVALID_USERNAME_PASSWORD)))?;
 
     identity.sign_in(user_info.id)?;
 
@@ -71,7 +70,7 @@ async fn sign_out(identity: Identity) -> Result<&'static str, Error> {
         identity.sign_out();
         Ok("logged out")
     } else {
-        Err(Error::Status(StatusCode::UNAUTHORIZED))
+        Err(Kind::USER_NOT_SIGNED_IN.into())
     }
 }
 
@@ -83,7 +82,7 @@ async fn get_user_info(
         let pg_client = pg_pool.get().await?;
         query_user_by_id(&pg_client, user_id).await.json()
     } else {
-        Err(Error::Status(StatusCode::UNAUTHORIZED))
+        Err(Kind::USER_NOT_SIGNED_IN.into())
     }
 }
 
@@ -95,7 +94,7 @@ async fn get_user_role(
         let pg_client = pg_pool.get().await?;
         query_user_roles(&pg_client, user_id).await.json()
     } else {
-        Err(Error::Status(StatusCode::UNAUTHORIZED))
+        Err(Kind::USER_NOT_SIGNED_IN.into())
     }
 }
 //
@@ -111,7 +110,7 @@ async fn get_user_auth(
         let pg_client = pg_pool.get().await?;
         query_user_auth(&pg_client, user_id).await.json()
     } else {
-        Err(Error::Status(StatusCode::UNAUTHORIZED))
+        Err(Kind::USER_NOT_SIGNED_IN.into())
     }
 }
 
@@ -123,6 +122,6 @@ async fn get_user_perm(
         let pg_client = pg_pool.get().await?;
         query_user_perm(&pg_client, user_id).await.json()
     } else {
-        Err(Error::Status(StatusCode::UNAUTHORIZED))
+        Err(Kind::USER_NOT_SIGNED_IN.into())
     }
 }

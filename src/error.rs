@@ -2,10 +2,11 @@ use actix_web::body::Body;
 use actix_web::http::{header, StatusCode};
 use actix_web::HttpResponse;
 use serde::Serialize;
+use std::error::Error as StdError;
 use std::fmt;
 
 #[derive(Debug, Display, From)]
-pub enum Error {
+pub enum Detail {
     Io(std::io::Error),
     Borrow(std::cell::BorrowError),
     BorrowMut(std::cell::BorrowMutError),
@@ -29,17 +30,163 @@ pub enum Error {
     Http(HttpError),
 }
 
+impl StdError for Detail {}
+
+#[derive(Debug)]
+pub struct Error {
+    kind: &'static Kind,
+    detail: Option<Detail>,
+}
+
 impl Error {
-    pub fn custom(status: StatusCode, cause: String) -> Self {
-        Error::Http(HttpError { status, cause })
+    pub fn kind(kind: &'static Kind) -> Self {
+        Self::from(kind)
     }
 
-    pub fn static_custom(status: StatusCode, cause: &str) -> Self {
-        Self::custom(status, cause.to_owned())
+    pub fn new(kind: &'static Kind, detail: Detail) -> Self {
+        Self {
+            kind,
+            detail: Some(detail),
+        }
     }
 }
 
-impl std::error::Error for Error {}
+impl From<tokio_postgres::Error> for Error {
+    fn from(e: tokio_postgres::Error) -> Self {
+        Error::new(Kind::DB_ERROR, Detail::from(e))
+    }
+}
+
+impl From<deadpool::managed::PoolError<tokio_postgres::error::Error>> for Error {
+    fn from(e: deadpool::managed::PoolError<tokio_postgres::error::Error>) -> Self {
+        Error {
+            kind: Kind::DB_POOL_ERROR,
+            detail: Some(Detail::from(e)),
+        }
+    }
+}
+
+impl From<tokio_pg_mapper::Error> for Error {
+    fn from(e: tokio_pg_mapper::Error) -> Self {
+        Error {
+            kind: Kind::DB_MAPPER_ERROR,
+            detail: Some(Detail::from(e)),
+        }
+    }
+}
+
+impl From<deadpool::managed::PoolError<redis::RedisError>> for Error {
+    fn from(e: deadpool::managed::PoolError<redis::RedisError>) -> Self {
+        Error {
+            kind: Kind::CACHE_POOL_ERROR,
+            detail: Some(Detail::from(e)),
+        }
+    }
+}
+
+impl From<redis::RedisError> for Error {
+    fn from(e: redis::RedisError) -> Self {
+        Error {
+            kind: Kind::CACHE_ERROR,
+            detail: Some(Detail::from(e)),
+        }
+    }
+}
+
+/// 错误
+#[derive(Debug)]
+pub struct Kind {
+    code: i64,
+    message: &'static str,
+    status: StatusCode,
+}
+
+impl From<&'static Kind> for Error {
+    fn from(kind: &'static Kind) -> Self {
+        Self { kind, detail: None }
+    }
+}
+
+impl fmt::Display for Kind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        write!(f, "{}(HTTP{}): {}", self.code, self.status, self.message)
+    }
+}
+
+#[allow(dead_code)]
+impl Kind {
+    pub fn with_detail(&'static self, detail: Detail) -> Error {
+        Error {
+            kind: self,
+            detail: Some(detail),
+        }
+    }
+
+    pub fn code(&self) -> i64 {
+        self.code
+    }
+
+    pub fn status(&self) -> StatusCode {
+        self.status
+    }
+
+    pub fn message(&self) -> &'static str {
+        self.message
+    }
+
+    const fn new(code: i64, message: &'static str, status: StatusCode) -> Self {
+        Self {
+            code,
+            message,
+            status,
+        }
+    }
+
+    /// 成功
+    pub const OK: &'static Kind = &Kind::new(0, "成功", StatusCode::OK);
+
+    /// 失败（客户端错误， code>0 & status=4XX）
+    pub const USER_NOT_SIGNED_IN: &'static Kind =
+        &Kind::new(1, "用户尚未登录", StatusCode::UNAUTHORIZED);
+    pub const NO_PERMISSION: &'static Kind =
+        &Kind::new(2, "用户没有权限", StatusCode::UNAUTHORIZED);
+    pub const INVALID_PHONE_NUMBER: &'static Kind =
+        &Kind::new(3, "手机号错误", StatusCode::BAD_REQUEST);
+    pub const INVALID_USERNAME_PASSWORD: &'static Kind =
+        &Kind::new(4, "用户名/密码错误", StatusCode::BAD_REQUEST);
+    pub const INVALID_AUTH_CODE: &'static Kind =
+        &Kind::new(5, "验证码错误", StatusCode::BAD_REQUEST);
+    pub const DUPLICATE_IDENTITY: &'static Kind =
+        &Kind::new(6, "该身份标识已经注册", StatusCode::BAD_REQUEST);
+
+    /// 错误（服务端错误，code<0 & status=5XX)
+    pub const UNKNOWN: &'static Kind =
+        &Kind::new(-1, "未知服务器错误", StatusCode::INTERNAL_SERVER_ERROR);
+    pub const DATA_FORMAT: &'static Kind =
+        &Kind::new(-2, "内部数据格式错误", StatusCode::INTERNAL_SERVER_ERROR);
+    pub const DB_ERROR: &'static Kind =
+        &Kind::new(-3, "数据库错误", StatusCode::INTERNAL_SERVER_ERROR);
+    pub const DB_POOL_ERROR: &'static Kind =
+        &Kind::new(-4, "数据库连接池错误", StatusCode::INTERNAL_SERVER_ERROR);
+    pub const DB_MAPPER_ERROR: &'static Kind =
+        &Kind::new(-5, "数据格式错误", StatusCode::INTERNAL_SERVER_ERROR);
+    pub const CACHE_ERROR: &'static Kind =
+        &Kind::new(-6, "缓存错误", StatusCode::INTERNAL_SERVER_ERROR);
+    pub const CACHE_POOL_ERROR: &'static Kind =
+        &Kind::new(-7, "缓存连接池错误", StatusCode::INTERNAL_SERVER_ERROR);
+}
+
+impl StdError for Error {}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        if let Some(detail) = &self.detail {
+            write!(f, "{}, {}", self.kind, detail)
+        } else {
+            write!(f, "{}", self.kind)
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct HttpError {
@@ -53,19 +200,22 @@ impl fmt::Display for HttpError {
     }
 }
 
-#[derive(Debug, Display, Serialize)]
+#[derive(Debug, Serialize)]
 struct ErrorResponse {
-    cause: String,
+    code: i64,
+    message: String,
+    detail: String,
 }
 
 impl From<&Error> for ErrorResponse {
     fn from(e: &Error) -> Self {
         Self {
-            cause: match e {
-                Error::Text(s) => s.clone(),
-                Error::Static(s) => (*s).to_string(),
-                Error::Http(he) => he.cause.clone(),
-                _ => format!("{}", e),
+            code: e.kind.code,
+            message: e.kind.message.into(),
+            detail: if let Some(detail) = &e.detail {
+                format!("{}", detail)
+            } else {
+                "".into()
             },
         }
     }
@@ -73,11 +223,7 @@ impl From<&Error> for ErrorResponse {
 
 impl actix_web::ResponseError for Error {
     fn status_code(&self) -> StatusCode {
-        match self {
-            Error::Http(ce) => ce.status,
-            Error::Status(s) => s.to_owned(),
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
-        }
+        self.kind.status
     }
 
     fn error_response(&self) -> HttpResponse<Body> {

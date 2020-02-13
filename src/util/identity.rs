@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::error::{Detail, Error, Kind};
 use actix_web::cookie::{Cookie, CookieJar, Key};
 use actix_web::dev::{Payload, Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::http::{header, HeaderValue};
@@ -83,10 +83,11 @@ impl Identity {
     }
 
     /// 登录
-    pub fn sign_in<T: Serialize + DeserializeOwned>(&self, id: T) -> Result<(), serde_json::Error> {
+    pub fn sign_in<T: Serialize + DeserializeOwned>(&self, id: T) -> Result<(), Error> {
         self.0.extensions_mut().insert(IdentityCache::Guest {
             action: Some(SignIn {
-                identity: serde_json::to_string(&id)?,
+                identity: serde_json::to_string(&id)
+                    .map_err(|e| Kind::DATA_FORMAT.with_detail(Detail::from(e)))?,
                 ttl: Some(Self::default_ttl()),
             }),
         });
