@@ -38,6 +38,8 @@ impl AuthCode {
     }
 }
 
+type SqlException = Box<dyn StdError + Sync + Send>;
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Phone(PhoneNumber);
 
@@ -68,13 +70,12 @@ impl fmt::Display for Phone {
     }
 }
 
-type SqlException = Box<dyn StdError + Sync + Send>;
-
 impl<'a> FromSql<'a> for Phone {
     fn from_sql(ty: &Type, raw: &'a [u8]) -> Result<Self, SqlException> {
         let s = <&str as FromSql>::from_sql(ty, raw)?;
-        let pn = PhoneNumber::from_str(s)?;
-        Ok(Phone(pn))
+        let phone =
+            Phone::from_str(s).map_err(|_| String::from("从数据库中读出的手机号格式错误"))?;
+        Ok(phone)
     }
 
     fn accepts(ty: &Type) -> bool {
@@ -117,5 +118,83 @@ impl<'de> Deserialize<'de> for Phone {
     {
         let s = String::deserialize(deserializer)?;
         Phone::new(&s).map_err(de::Error::custom)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Email(String);
+
+impl FromStr for Email {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if mailchecker::is_valid(s) {
+            Ok(Self(s.into()))
+        } else {
+            Err(Kind::INVALID_EMAIL.into())
+        }
+    }
+}
+
+impl Email {
+    pub fn new(src: &str) -> Result<Self, Error> {
+        Self::from_str(src)
+    }
+}
+
+impl fmt::Display for Email {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl<'a> FromSql<'a> for Email {
+    fn from_sql(ty: &Type, raw: &'a [u8]) -> Result<Self, SqlException> {
+        let s = <&str as FromSql>::from_sql(ty, raw)?;
+        let email =
+            Email::from_str(s).map_err(|_| String::from("从数据库中读出的Email格式错误"))?;
+        Ok(email)
+    }
+
+    fn accepts(ty: &Type) -> bool {
+        <&str as FromSql>::accepts(ty)
+    }
+}
+
+impl ToSql for Email {
+    fn to_sql(&self, ty: &Type, out: &mut BytesMut) -> Result<IsNull, SqlException>
+    where
+        Self: Sized,
+    {
+        let s = self.0.clone();
+        s.to_sql(ty, out)
+    }
+
+    fn accepts(ty: &Type) -> bool
+    where
+        Self: Sized,
+    {
+        <&str as ToSql>::accepts(ty)
+    }
+
+    to_sql_checked!();
+}
+
+impl Serialize for Email {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.0)
+    }
+}
+
+impl<'de> Deserialize<'de> for Email {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Email::new(&s).map_err(de::Error::custom)
     }
 }

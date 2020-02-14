@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::error::{Error, Kind};
 use crate::model::{Count, Id, Role};
 use crate::util::db::Pager;
 use deadpool_postgres::Client as PgClient;
@@ -31,9 +31,12 @@ pub async fn query_roles(pg_client: &PgClient, pager: &Pager) -> Result<Vec<Role
 }
 
 pub async fn query_role_by_id(pg_client: &PgClient, id: Id) -> Result<Role, Error> {
-    Ok(Role::from_row_ref(
-        &pg_client
-            .query_one("select * from role where id = $1", &[&id])
-            .await?,
-    )?)
+    if let Some(row) = pg_client
+        .query_opt("select * from role where id = $1", &[&id])
+        .await?
+    {
+        Ok(Role::from_row(row)?)
+    } else {
+        Err(Kind::EMPTY_RESULT.into())
+    }
 }

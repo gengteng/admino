@@ -17,7 +17,7 @@
     <hr/>
     <h2>user</h2>
     <ul type="square">
-        <li><a href="javascript:void(0);" onclick="getAuthCode()">获取验证码</a>
+        <li><a href="javascript:void(0);" onclick="getPhoneAuthCode()">获取验证码</a>
             <label for="auth_phone"></label>
             <input type="text" name="auth_phone" id="auth_phone" placeholder="auth_phone"/>
         </li>
@@ -85,8 +85,8 @@
             });
         }
 
-        function getAuthCode() {
-            doPost("/user/authCode", {"phone": $("#auth_phone").val()}, "获取短信验证码");
+        function getPhoneAuthCode() {
+            doPost("/user/phoneAuthCode", {"identity": $("#auth_phone").val()}, "获取短信验证码");
         }
 
         function register() {

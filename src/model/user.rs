@@ -17,7 +17,7 @@ pub struct UserInfo {
 }
 
 /// 授权类型
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, ToSql, FromSql)]
+#[derive(Serialize, Deserialize, Debug, Display, PartialEq, Eq, Clone, ToSql, FromSql)]
 pub enum AuthType {
     Username,
     Phone,
@@ -65,5 +65,5 @@ pub struct RegisterParams {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub struct GetAuthCodeParams {
-    pub phone: String,
+    pub identity: String,
 }

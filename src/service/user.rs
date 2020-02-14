@@ -4,30 +4,37 @@ use crate::model::*;
 use crate::util::types::{AuthCode, Phone};
 use deadpool_redis::cmd;
 use log::*;
+use std::fmt::Display;
 use tokio_pg_mapper::FromTokioPostgresRow;
 
-const AUTH_CODE_KEY: &str = "user:authCode:";
+const AUTH_CODE_KEY: &str = "user:authCode";
 const AUTH_CODE_EXPIRE: &str = "300";
 
-pub async fn cache_auth_code(
+fn gen_auth_code_key<T: Display>(auth_type: AuthType, identity: &T) -> String {
+    format!("{}:{}:{}", AUTH_CODE_KEY, auth_type, identity)
+}
+
+pub async fn cache_auth_code<T: Display>(
     redis: &mut RedisClient,
-    phone: &Phone,
+    auth_type: AuthType,
+    identity: &T,
     auth_code: &AuthCode,
 ) -> Result<(), Error> {
     Ok(cmd("SETEX")
-        .arg(format!("{}{}", AUTH_CODE_KEY, phone))
+        .arg(gen_auth_code_key(auth_type, identity))
         .arg(AUTH_CODE_EXPIRE)
         .arg(&auth_code.code)
         .execute_async(redis)
         .await?)
 }
 
-pub async fn check_auth_code(
+pub async fn check_auth_code<T: Display>(
     redis: &mut RedisClient,
-    phone: &Phone,
+    auth_type: AuthType,
+    identity: &T,
     auth_code: &AuthCode,
 ) -> Result<bool, Error> {
-    let key = format!("{}{}", AUTH_CODE_KEY, phone);
+    let key = gen_auth_code_key(auth_type, identity);
 
     let get_auth_code: Option<String> = cmd("GET").arg(&key).query_async(redis).await?;
 
@@ -40,17 +47,23 @@ pub async fn check_auth_code(
         error!("从 Redis 中删除 {} 时发生错误: {}", key, e);
     }
 
-    Ok(auth_code.eq(&cached_auth_code))
+    Ok(auth_code == &cached_auth_code)
 }
 
-pub async fn create_user(pg: &mut PgClient, username: &str, nickname: &str, phone: &Phone) -> Result<UserInfo, Error> {
+pub async fn create_user_with_phone(
+    pg: &mut PgClient,
+    username: &str,
+    nickname: &str,
+    phone: &Phone,
+) -> Result<UserInfo, Error> {
     let transaction = pg.transaction().await?;
 
     let user_info = UserInfo::from_row(
-        transaction.query_one(
-            "insert into user_info(username, nickname) values($1, $2) returning *",
-            &[&username, &nickname],
-        )
+        transaction
+            .query_one(
+                "insert into user_info(username, nickname) values($1, $2) returning *",
+                &[&username, &nickname],
+            )
             .await?,
     )?;
 
@@ -62,25 +75,27 @@ pub async fn create_user(pg: &mut PgClient, username: &str, nickname: &str, phon
     Ok(user_info)
 }
 
-pub async fn username_login(
+pub async fn sign_in_with_username(
     pg: &PgClient,
     username: &str,
     _password: &str,
 ) -> Result<UserInfo, Error> {
-    let row = pg
-        .query_one("select * from user_info where id in (select user_id from user_auth where auth_type = $1 and identity = $2)",
-                   &[&AuthType::Username, &username]).await?;
-
-    Ok(UserInfo::from_row(row)?)
+    if let Some(row) = pg
+        .query_opt("select * from user_info where id in (select user_id from user_auth where auth_type = $1 and identity = $2)",
+                   &[&AuthType::Username, &username]).await? {
+        Ok(UserInfo::from_row(row)?)
+    } else {
+        Err(Kind::INVALID_USERNAME_PASSWORD.into())
+    }
 }
 
-pub async fn phone_login(
+pub async fn sign_in_with_phone(
     pg: &PgClient,
     redis: &mut RedisClient,
     phone: &Phone,
     auth_code: &AuthCode,
 ) -> Result<UserInfo, Error> {
-    if !check_auth_code(redis, phone, auth_code).await? {
+    if !check_auth_code(redis, AuthType::Phone, phone, auth_code).await? {
         return Err(Kind::INVALID_AUTH_CODE.into());
     }
 
@@ -92,10 +107,14 @@ pub async fn phone_login(
 }
 
 pub async fn query_user_by_id(pg: &PgClient, id: Id) -> Result<UserInfo, Error> {
-    let row = pg
-        .query_one("select * from user_info where id = $1", &[&id])
-        .await?;
-    Ok(UserInfo::from_row(row)?)
+    if let Some(row) = pg
+        .query_opt("select * from user_info where id = $1", &[&id])
+        .await?
+    {
+        Ok(UserInfo::from_row(row)?)
+    } else {
+        Err(Kind::EMPTY_RESULT.into())
+    }
 }
 
 pub async fn query_user_roles(pg: &PgClient, user_id: Id) -> Result<Vec<Id>, Error> {

@@ -53,6 +53,16 @@ impl Error {
 
 impl From<tokio_postgres::Error> for Error {
     fn from(e: tokio_postgres::Error) -> Self {
+        if let Some(e) = e.source() {
+            if let Some(e) = e.downcast_ref::<tokio_postgres::error::DbError>() {
+                if let Some(constrait) = e.constraint() {
+                    if constrait == "user_auth_type_identity_unique" {
+                        return Kind::DUPLICATE_IDENTITY.into();
+                    }
+                }
+            }
+        }
+
         Error::new(Kind::DB_ERROR, Detail::from(e))
     }
 }
@@ -151,13 +161,16 @@ impl Kind {
     pub const NO_PERMISSION: &'static Kind =
         &Kind::new(2, "用户没有权限", StatusCode::UNAUTHORIZED);
     pub const INVALID_PHONE_NUMBER: &'static Kind =
-        &Kind::new(3, "手机号错误", StatusCode::BAD_REQUEST);
+        &Kind::new(3, "手机号格式错误", StatusCode::BAD_REQUEST);
+    pub const INVALID_EMAIL: &'static Kind =
+        &Kind::new(4, "电子邮件格式错误", StatusCode::BAD_REQUEST);
     pub const INVALID_USERNAME_PASSWORD: &'static Kind =
-        &Kind::new(4, "用户名/密码错误", StatusCode::BAD_REQUEST);
+        &Kind::new(5, "用户名/密码错误", StatusCode::BAD_REQUEST);
     pub const INVALID_AUTH_CODE: &'static Kind =
-        &Kind::new(5, "验证码错误", StatusCode::BAD_REQUEST);
+        &Kind::new(6, "验证码错误", StatusCode::BAD_REQUEST);
     pub const DUPLICATE_IDENTITY: &'static Kind =
-        &Kind::new(6, "该身份标识已经注册", StatusCode::BAD_REQUEST);
+        &Kind::new(7, "该身份标识已经注册", StatusCode::BAD_REQUEST);
+    pub const EMPTY_RESULT: &'static Kind = &Kind::new(8, "查询结果为空", StatusCode::NOT_FOUND);
 
     /// 错误（服务端错误，code<0 & status=5XX)
     pub const UNKNOWN: &'static Kind =
