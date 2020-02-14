@@ -57,12 +57,18 @@ macro_rules! simple_to_error {
                 Error::new($k, e)
             }
         }
-    }
+    };
 }
 
-simple_to_error!(deadpool::managed::PoolError<tokio_postgres::error::Error>, Kind::DB_POOL_ERROR);
+simple_to_error!(
+    deadpool::managed::PoolError<tokio_postgres::error::Error>,
+    Kind::DB_POOL_ERROR
+);
 simple_to_error!(tokio_pg_mapper::Error, Kind::DB_MAPPER_ERROR);
-simple_to_error!(deadpool::managed::PoolError<redis::RedisError>, Kind::CACHE_POOL_ERROR);
+simple_to_error!(
+    deadpool::managed::PoolError<redis::RedisError>,
+    Kind::CACHE_POOL_ERROR
+);
 simple_to_error!(redis::RedisError, Kind::CACHE_ERROR);
 
 /// 错误
@@ -126,8 +132,7 @@ impl Kind {
         &Kind::new(3, "手机号格式错误", StatusCode::BAD_REQUEST);
     pub const INVALID_EMAIL: &'static Kind =
         &Kind::new(4, "电子邮件格式错误", StatusCode::BAD_REQUEST);
-    pub const LOGIN_FAILED: &'static Kind =
-        &Kind::new(5, "登录失败", StatusCode::UNAUTHORIZED);
+    pub const LOGIN_FAILED: &'static Kind = &Kind::new(5, "登录失败", StatusCode::UNAUTHORIZED);
     pub const INVALID_AUTH_CODE: &'static Kind =
         &Kind::new(6, "验证码错误", StatusCode::BAD_REQUEST);
     pub const DUPLICATE_IDENTITY: &'static Kind =

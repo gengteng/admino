@@ -1,4 +1,4 @@
-use crate::error::{Error, Kind, Exception};
+use crate::error::{Error, Exception, Kind};
 use phonenumber::{Mode, PhoneNumber};
 use postgres_types::private::BytesMut;
 use postgres_types::{FromSql, IsNull, ToSql, Type};
