@@ -3,7 +3,7 @@ use crate::error::{Error, Kind};
 use crate::model::*;
 use crate::service::user::*;
 use crate::util::identity::Identity;
-use crate::util::types::AuthCode;
+use crate::util::types::{AuthCode, Phone};
 use actix_web::web::Json;
 use actix_web::{web, Scope};
 
@@ -23,12 +23,14 @@ async fn get_auth_code(
     get_auth_param: Json<GetAuthCodeParams>,
     redis_pool: web::Data<RedisPool>,
 ) -> Result<Json<AuthCode>, Error> {
+    let phone = Phone::new(&get_auth_param.phone)?;
+
     let auth_code = AuthCode::default();
 
     // TODO: send sms to phone
 
     let mut redis_client = redis_pool.get().await?;
-    cache_auth_code(&mut redis_client, &get_auth_param.phone, &auth_code).await?;
+    cache_auth_code(&mut redis_client, &phone, &auth_code).await?;
 
     Ok(Json(auth_code)) // TODO: just send ok
 }
@@ -40,25 +42,47 @@ async fn register(
 ) -> Result<Json<UserInfo>, Error> {
     let reg_param = reg_param.into_inner();
 
+    let phone = Phone::new(&reg_param.phone)?;
+    let auth_code = AuthCode::new(&reg_param.auth_code)?;
+
     let mut redis_client = redis_pool.get().await?;
 
-    if !check_auth_code(&mut redis_client, &reg_param).await? {
+    if !check_auth_code(&mut redis_client, &phone, &auth_code).await? {
         return Err(Kind::INVALID_AUTH_CODE.into());
     }
 
     let pg_client = pg_pool.get().await?;
-    create_user(&pg_client, &reg_param).await.json()
+    create_user(&pg_client, &reg_param.nickname, &phone)
+        .await
+        .json()
 }
 
 async fn sign_in(
     sign_in_params: Json<SignInParams>,
     identity: Identity,
     pg_pool: web::Data<PgPool>,
+    redis_pool: web::Data<RedisPool>,
 ) -> Result<Json<UserInfo>, Error> {
+    let sign_in_params = sign_in_params.into_inner();
+
     let pg_client = pg_pool.get().await?;
-    let user_info = login(&pg_client, sign_in_params.into_inner())
+    let user_info = match sign_in_params.auth_type {
+        AuthType::Username => username_login(
+            &pg_client,
+            &sign_in_params.identity,
+            &sign_in_params.credential1,
+        )
         .await
-        .or_else(|_| Err(Error::kind(Kind::INVALID_USERNAME_PASSWORD)))?;
+        .or_else(|_| Err(Error::kind(Kind::INVALID_USERNAME_PASSWORD)))?,
+        AuthType::Phone => {
+            let phone = Phone::new(&sign_in_params.identity)?;
+            let auth_code = AuthCode::new(&sign_in_params.credential1)?;
+
+            let mut redis_client = redis_pool.get().await?;
+            phone_login(&pg_client, &mut redis_client, &phone, &auth_code).await?
+        }
+        AuthType::Email => unimplemented!(),
+    };
 
     identity.sign_in(user_info.id)?;
 

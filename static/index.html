@@ -32,6 +32,10 @@
             <a href="javascript:void(0);" onclick="signIn()">登录</a>
             <label for="identity"></label>
             <input type="text" name="identity" id="identity" placeholder="identity"/>
+            <label for="credential1"></label>
+            <input type="text" name="credential1" id="credential1" placeholder="credential1"/>
+            <label for="credential2"></label>
+            <input type="text" name="credential2" id="credential2" placeholder="credential2"/>
             <label for="authType"></label>
             <select name="auth_type" id="authType">
                 <option selected>登录方式</option>
@@ -88,7 +92,8 @@
         function signIn() {
             doPost("/user/signIn", {"auth_type": $("#authType").val(),
                 "identity": $("#identity").val(),
-                "credential1" : ""}, "登录");
+                "credential1" : $("#credential1").val(),
+                "credential2" : $("#credential2").val()}, "登录");
         }
 
         function signOut() {

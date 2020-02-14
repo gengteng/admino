@@ -1,5 +1,4 @@
 use super::*;
-use crate::util::types::Phone;
 use chrono::{NaiveDate, NaiveDateTime};
 
 /// 用户
@@ -59,11 +58,11 @@ pub struct SignInParams {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub struct RegisterParams {
     pub nickname: String,
-    pub phone: Phone,
+    pub phone: String,
     pub auth_code: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub struct GetAuthCodeParams {
-    pub phone: Phone,
+    pub phone: String,
 }

@@ -1,5 +1,5 @@
 use super::{PgClient, RedisClient};
-use crate::error::Error;
+use crate::error::{Error, Kind};
 use crate::model::*;
 use crate::util::types::{AuthCode, Phone};
 use deadpool_redis::cmd;
@@ -24,34 +24,59 @@ pub async fn cache_auth_code(
 
 pub async fn check_auth_code(
     redis: &mut RedisClient,
-    register: &RegisterParams,
+    phone: &Phone,
+    auth_code: &AuthCode,
 ) -> Result<bool, Error> {
-    let key = format!("{}{}", AUTH_CODE_KEY, register.phone);
+    let key = format!("{}{}", AUTH_CODE_KEY, phone);
 
-    let auth_code: String = cmd("GET").arg(&key).query_async(redis).await?;
+    let cached_auth_code: String = cmd("GET").arg(&key).query_async(redis).await?;
+
+    let cached_auth_code = AuthCode::new(&cached_auth_code)?;
 
     match cmd("DEL").arg(&key).execute_async(redis).await {
         Err(e) => error!("从 Redis 中删除 {} 时发生错误: {}", key, e),
         _ => {}
     }
 
-    Ok(auth_code == register.auth_code)
+    Ok(auth_code.eq(&cached_auth_code))
 }
 
-pub async fn create_user(pg: &PgClient, register: &RegisterParams) -> Result<UserInfo, Error> {
+pub async fn create_user(pg: &PgClient, nickname: &str, phone: &Phone) -> Result<UserInfo, Error> {
     Ok(UserInfo::from_row(
         pg.query_one(
+            // TODO: 修改为使用用户名、手机号注册
             "insert into user_info(nickname, phone) values($1, $2) returning *",
-            &[&register.nickname, &register.phone],
+            &[&nickname, phone],
         )
         .await?,
     )?)
 }
 
-pub async fn login(pg: &PgClient, auth_info: SignInParams) -> Result<UserInfo, Error> {
+pub async fn username_login(
+    pg: &PgClient,
+    username: &str,
+    _password: &str,
+) -> Result<UserInfo, Error> {
     let row = pg
         .query_one("select * from user_info where id in (select user_id from user_auth where auth_type = $1 and identity = $2)",
-                   &[&auth_info.auth_type, &auth_info.identity]).await?;
+                   &[&AuthType::Username, &username]).await?;
+
+    Ok(UserInfo::from_row(row)?)
+}
+
+pub async fn phone_login(
+    pg: &PgClient,
+    redis: &mut RedisClient,
+    phone: &Phone,
+    auth_code: &AuthCode,
+) -> Result<UserInfo, Error> {
+    if !check_auth_code(redis, phone, auth_code).await? {
+        return Err(Kind::INVALID_AUTH_CODE.into());
+    }
+
+    let row = pg
+        .query_one("select * from user_info where id in (select user_id from user_auth where auth_type = $1 and identity = $2)",
+                   &[&AuthType::Phone, phone]).await?;
 
     Ok(UserInfo::from_row(row)?)
 }
