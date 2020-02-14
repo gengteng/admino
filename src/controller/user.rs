@@ -46,13 +46,12 @@ async fn register(
     let auth_code = AuthCode::new(&reg_param.auth_code)?;
 
     let mut redis_client = redis_pool.get().await?;
-
     if !check_auth_code(&mut redis_client, &phone, &auth_code).await? {
         return Err(Kind::INVALID_AUTH_CODE.into());
     }
 
-    let pg_client = pg_pool.get().await?;
-    create_user(&pg_client, &reg_param.nickname, &phone)
+    let mut pg_client = pg_pool.get().await?;
+    create_user(&mut pg_client, &reg_param.username, &reg_param.nickname, &phone)
         .await
         .json()
 }

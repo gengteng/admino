@@ -29,27 +29,37 @@ pub async fn check_auth_code(
 ) -> Result<bool, Error> {
     let key = format!("{}{}", AUTH_CODE_KEY, phone);
 
-    let cached_auth_code: String = cmd("GET").arg(&key).query_async(redis).await?;
+    let get_auth_code: Option<String> = cmd("GET").arg(&key).query_async(redis).await?;
 
-    let cached_auth_code = AuthCode::new(&cached_auth_code)?;
+    let cached_auth_code = match get_auth_code {
+        Some(cached_auth_code) => AuthCode::new(&cached_auth_code)?,
+        None => return Err(Kind::INVALID_AUTH_CODE.into()),
+    };
 
-    match cmd("DEL").arg(&key).execute_async(redis).await {
-        Err(e) => error!("从 Redis 中删除 {} 时发生错误: {}", key, e),
-        _ => {}
+    if let Err(e) = cmd("DEL").arg(&key).execute_async(redis).await {
+        error!("从 Redis 中删除 {} 时发生错误: {}", key, e);
     }
 
     Ok(auth_code.eq(&cached_auth_code))
 }
 
-pub async fn create_user(pg: &PgClient, nickname: &str, phone: &Phone) -> Result<UserInfo, Error> {
-    Ok(UserInfo::from_row(
-        pg.query_one(
-            // TODO: 修改为使用用户名、手机号注册
-            "insert into user_info(nickname, phone) values($1, $2) returning *",
-            &[&nickname, phone],
+pub async fn create_user(pg: &mut PgClient, username: &str, nickname: &str, phone: &Phone) -> Result<UserInfo, Error> {
+    let transaction = pg.transaction().await?;
+
+    let user_info = UserInfo::from_row(
+        transaction.query_one(
+            "insert into user_info(username, nickname) values($1, $2) returning *",
+            &[&username, &nickname],
         )
-        .await?,
-    )?)
+            .await?,
+    )?;
+
+    transaction.execute("insert into user_auth(user_id, auth_type, identity, credential1) values($1, $2, $3, $4)",
+        &[&user_info.id, &AuthType::Phone, phone, &""]).await?;
+
+    transaction.commit().await?;
+
+    Ok(user_info)
 }
 
 pub async fn username_login(

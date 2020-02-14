@@ -13,7 +13,7 @@ pub struct UserInfo {
     pub birthday: Option<NaiveDate>,
     pub create_time: NaiveDateTime,
     pub update_time: NaiveDateTime,
-    pub max_role: i64,
+    pub max_role: Option<i64>,
 }
 
 /// 授权类型
@@ -57,6 +57,7 @@ pub struct SignInParams {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub struct RegisterParams {
+    pub username: String,
     pub nickname: String,
     pub phone: String,
     pub auth_code: String,
