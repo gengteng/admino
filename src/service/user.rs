@@ -85,7 +85,7 @@ pub async fn sign_in_with_username(
                    &[&AuthType::Username, &username]).await? {
         Ok(UserInfo::from_row(row)?)
     } else {
-        Err(Kind::INVALID_USERNAME_PASSWORD.into())
+        Err(Kind::LOGIN_FAILED.into())
     }
 }
 
@@ -99,11 +99,13 @@ pub async fn sign_in_with_phone(
         return Err(Kind::INVALID_AUTH_CODE.into());
     }
 
-    let row = pg
-        .query_one("select * from user_info where id in (select user_id from user_auth where auth_type = $1 and identity = $2)",
-                   &[&AuthType::Phone, phone]).await?;
-
-    Ok(UserInfo::from_row(row)?)
+    if let Some(row) = pg
+        .query_opt("select * from user_info where id in (select user_id from user_auth where auth_type = $1 and identity = $2)",
+                   &[&AuthType::Phone, phone]).await? {
+        Ok(UserInfo::from_row(row)?)
+    } else {
+        Err(Kind::LOGIN_FAILED.into())
+    }
 }
 
 pub async fn query_user_by_id(pg: &PgClient, id: Id) -> Result<UserInfo, Error> {

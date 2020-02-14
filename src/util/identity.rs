@@ -1,4 +1,4 @@
-use crate::error::{Detail, Error, Kind};
+use crate::error::{Error, Kind};
 use actix_web::cookie::{Cookie, CookieJar, Key};
 use actix_web::dev::{Payload, Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::http::{header, HeaderValue};
@@ -87,7 +87,7 @@ impl Identity {
         self.0.extensions_mut().insert(IdentityCache::Guest {
             action: Some(SignIn {
                 identity: serde_json::to_string(&id)
-                    .map_err(|e| Kind::DATA_FORMAT.with_detail(Detail::from(e)))?,
+                    .map_err(|e| Kind::DATA_FORMAT.with_detail(e))?,
                 ttl: Some(Self::default_ttl()),
             }),
         });

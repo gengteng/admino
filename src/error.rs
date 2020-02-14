@@ -5,49 +5,32 @@ use serde::Serialize;
 use std::error::Error as StdError;
 use std::fmt;
 
-#[derive(Debug, Display, From)]
-pub enum Detail {
-    Io(std::io::Error),
-    Borrow(std::cell::BorrowError),
-    BorrowMut(std::cell::BorrowMutError),
-    ParseInt(std::num::ParseIntError),
-
-    Actix(actix_web::error::Error),
-    Serde(serde_json::error::Error),
-
-    Postgres(tokio_postgres::error::Error),
-    PgPool(deadpool::managed::PoolError<tokio_postgres::error::Error>),
-    PgMap(tokio_pg_mapper::Error),
-
-    Redis(redis::RedisError),
-    RedisPool(deadpool::managed::PoolError<redis::RedisError>),
-
-    Failure(failure::Error),
-
-    Static(&'static str),
-    Text(String),
-    Status(StatusCode),
-    Http(HttpError),
-}
-
-impl StdError for Detail {}
+pub type Exception = Box<dyn StdError + Sync + Send + 'static>;
 
 #[derive(Debug)]
 pub struct Error {
     kind: &'static Kind,
-    detail: Option<Detail>,
+    detail: Option<Exception>,
 }
 
 impl Error {
-    pub fn kind(kind: &'static Kind) -> Self {
+    pub fn simple(kind: &'static Kind) -> Self {
         Self::from(kind)
     }
 
-    pub fn new(kind: &'static Kind, detail: Detail) -> Self {
+    pub fn new<E: StdError + Sync + Send + 'static>(kind: &'static Kind, error: E) -> Self {
         Self {
             kind,
-            detail: Some(detail),
+            detail: Some(Box::new(error)),
         }
+    }
+
+    pub fn kind(&self) -> &'static Kind {
+        self.kind
+    }
+
+    pub fn detail(&self) -> Option<&Exception> {
+        self.detail.as_ref()
     }
 }
 
@@ -55,53 +38,32 @@ impl From<tokio_postgres::Error> for Error {
     fn from(e: tokio_postgres::Error) -> Self {
         if let Some(e) = e.source() {
             if let Some(e) = e.downcast_ref::<tokio_postgres::error::DbError>() {
-                if let Some(constrait) = e.constraint() {
-                    if constrait == "user_auth_type_identity_unique" {
+                if let Some(constraint) = e.constraint() {
+                    if constraint == "user_auth_type_identity_unique" {
                         return Kind::DUPLICATE_IDENTITY.into();
                     }
                 }
             }
         }
 
-        Error::new(Kind::DB_ERROR, Detail::from(e))
+        Error::new(Kind::DB_ERROR, e)
     }
 }
 
-impl From<deadpool::managed::PoolError<tokio_postgres::error::Error>> for Error {
-    fn from(e: deadpool::managed::PoolError<tokio_postgres::error::Error>) -> Self {
-        Error {
-            kind: Kind::DB_POOL_ERROR,
-            detail: Some(Detail::from(e)),
+macro_rules! simple_to_error {
+    ($t:ty, $k:expr) => {
+        impl From<$t> for Error {
+            fn from(e: $t) -> Self {
+                Error::new($k, e)
+            }
         }
     }
 }
 
-impl From<tokio_pg_mapper::Error> for Error {
-    fn from(e: tokio_pg_mapper::Error) -> Self {
-        Error {
-            kind: Kind::DB_MAPPER_ERROR,
-            detail: Some(Detail::from(e)),
-        }
-    }
-}
-
-impl From<deadpool::managed::PoolError<redis::RedisError>> for Error {
-    fn from(e: deadpool::managed::PoolError<redis::RedisError>) -> Self {
-        Error {
-            kind: Kind::CACHE_POOL_ERROR,
-            detail: Some(Detail::from(e)),
-        }
-    }
-}
-
-impl From<redis::RedisError> for Error {
-    fn from(e: redis::RedisError) -> Self {
-        Error {
-            kind: Kind::CACHE_ERROR,
-            detail: Some(Detail::from(e)),
-        }
-    }
-}
+simple_to_error!(deadpool::managed::PoolError<tokio_postgres::error::Error>, Kind::DB_POOL_ERROR);
+simple_to_error!(tokio_pg_mapper::Error, Kind::DB_MAPPER_ERROR);
+simple_to_error!(deadpool::managed::PoolError<redis::RedisError>, Kind::CACHE_POOL_ERROR);
+simple_to_error!(redis::RedisError, Kind::CACHE_ERROR);
 
 /// 错误
 #[derive(Debug)]
@@ -125,10 +87,10 @@ impl fmt::Display for Kind {
 
 #[allow(dead_code)]
 impl Kind {
-    pub fn with_detail(&'static self, detail: Detail) -> Error {
+    pub fn with_detail<E: StdError + Sync + Send + 'static>(&'static self, error: E) -> Error {
         Error {
             kind: self,
-            detail: Some(detail),
+            detail: Some(Box::new(error)),
         }
     }
 
@@ -164,8 +126,8 @@ impl Kind {
         &Kind::new(3, "手机号格式错误", StatusCode::BAD_REQUEST);
     pub const INVALID_EMAIL: &'static Kind =
         &Kind::new(4, "电子邮件格式错误", StatusCode::BAD_REQUEST);
-    pub const INVALID_USERNAME_PASSWORD: &'static Kind =
-        &Kind::new(5, "用户名/密码错误", StatusCode::BAD_REQUEST);
+    pub const LOGIN_FAILED: &'static Kind =
+        &Kind::new(5, "登录失败", StatusCode::UNAUTHORIZED);
     pub const INVALID_AUTH_CODE: &'static Kind =
         &Kind::new(6, "验证码错误", StatusCode::BAD_REQUEST);
     pub const DUPLICATE_IDENTITY: &'static Kind =
@@ -201,23 +163,13 @@ impl fmt::Display for Error {
     }
 }
 
-#[derive(Debug)]
-pub struct HttpError {
-    status: StatusCode,
-    cause: String,
-}
-
-impl fmt::Display for HttpError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.cause)
-    }
-}
-
 #[derive(Debug, Serialize)]
 struct ErrorResponse {
     code: i64,
     message: String,
-    detail: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    detail: Option<String>,
 }
 
 impl From<&Error> for ErrorResponse {
@@ -225,11 +177,7 @@ impl From<&Error> for ErrorResponse {
         Self {
             code: e.kind.code,
             message: e.kind.message.into(),
-            detail: if let Some(detail) = &e.detail {
-                format!("{}", detail)
-            } else {
-                "".into()
-            },
+            detail: e.detail().map(|e| format!("{}", e)),
         }
     }
 }

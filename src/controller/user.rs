@@ -94,7 +94,7 @@ async fn sign_in(
             &sign_in_params.credential1,
         )
         .await
-        .or_else(|_| Err(Error::kind(Kind::INVALID_USERNAME_PASSWORD)))?,
+        .or_else(|_| Err(Error::simple(Kind::LOGIN_FAILED)))?,
         AuthType::Phone => {
             let phone = Phone::new(&sign_in_params.identity)?;
             let auth_code = AuthCode::new(&sign_in_params.credential1)?;
@@ -142,10 +142,6 @@ async fn get_user_role(
         Err(Kind::USER_NOT_SIGNED_IN.into())
     }
 }
-//
-//async fn get_roles(identity: Identity, pager: web::Json<Condition>, pg_pool: web::Data<PgPool>) -> Result<Json<Role>, Error> {
-//    Err(Error::Status(StatusCode::UNAUTHORIZED))
-//}
 
 async fn get_user_auth(
     identity: Identity,

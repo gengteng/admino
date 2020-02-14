@@ -1,11 +1,10 @@
-use crate::error::{Error, Kind};
+use crate::error::{Error, Kind, Exception};
 use phonenumber::{Mode, PhoneNumber};
 use postgres_types::private::BytesMut;
 use postgres_types::{FromSql, IsNull, ToSql, Type};
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-use std::error::Error as StdError;
 use std::fmt;
 use std::str::FromStr;
 
@@ -38,8 +37,6 @@ impl AuthCode {
     }
 }
 
-type SqlException = Box<dyn StdError + Sync + Send>;
-
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Phone(PhoneNumber);
 
@@ -71,7 +68,7 @@ impl fmt::Display for Phone {
 }
 
 impl<'a> FromSql<'a> for Phone {
-    fn from_sql(ty: &Type, raw: &'a [u8]) -> Result<Self, SqlException> {
+    fn from_sql(ty: &Type, raw: &'a [u8]) -> Result<Self, Exception> {
         let s = <&str as FromSql>::from_sql(ty, raw)?;
         let phone =
             Phone::from_str(s).map_err(|_| String::from("从数据库中读出的手机号格式错误"))?;
@@ -84,7 +81,7 @@ impl<'a> FromSql<'a> for Phone {
 }
 
 impl ToSql for Phone {
-    fn to_sql(&self, ty: &Type, out: &mut BytesMut) -> Result<IsNull, SqlException>
+    fn to_sql(&self, ty: &Type, out: &mut BytesMut) -> Result<IsNull, Exception>
     where
         Self: Sized,
     {
@@ -149,7 +146,7 @@ impl fmt::Display for Email {
 }
 
 impl<'a> FromSql<'a> for Email {
-    fn from_sql(ty: &Type, raw: &'a [u8]) -> Result<Self, SqlException> {
+    fn from_sql(ty: &Type, raw: &'a [u8]) -> Result<Self, Exception> {
         let s = <&str as FromSql>::from_sql(ty, raw)?;
         let email =
             Email::from_str(s).map_err(|_| String::from("从数据库中读出的Email格式错误"))?;
@@ -162,7 +159,7 @@ impl<'a> FromSql<'a> for Email {
 }
 
 impl ToSql for Email {
-    fn to_sql(&self, ty: &Type, out: &mut BytesMut) -> Result<IsNull, SqlException>
+    fn to_sql(&self, ty: &Type, out: &mut BytesMut) -> Result<IsNull, Exception>
     where
         Self: Sized,
     {
