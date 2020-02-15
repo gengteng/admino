@@ -751,9 +751,9 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.6.2"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aafcde04e90a5226a6443b7aabdb016ba2f8307c847d524724bd9b346dd1a2d3"
+checksum = "44533bbbb3bb3c1fa17d9f2e4e38bbbaf8396ba82193c4cb1b6445d711445d36"
 dependencies = [
  "atty",
  "humantime",
@@ -1456,9 +1456,9 @@ dependencies = [
 
 [[package]]
 name = "phonenumber"
-version = "0.2.3+8.10.6"
+version = "0.2.4+8.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b542a6190f0f629282989ba0ba4c2c53dac417a2c2f745b36e7a89d00c67463e"
+checksum = "207b3a8b4b30da166f6d8175ad39b86aa84d190965be4533af3d5541754de358"
 dependencies = [
  "bincode",
  "either",
@@ -1466,7 +1466,7 @@ dependencies = [
  "fnv",
  "itertools",
  "lazy_static",
- "nom 4.2.3",
+ "nom 5.1.0",
  "quick-xml",
  "regex",
  "regex-cache",
@@ -1589,13 +1589,10 @@ checksum = "a1d01941d82fa2ab50be1e79e6714289dd7cde78eba4c074bc5a4374f650dfe0"
 
 [[package]]
 name = "quick-xml"
-version = "0.13.3"
+version = "0.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22fcc48ecef4609b243e8c01ff4695d08ee0fc9d5bdbc54630e1a5fe8bb40953"
+checksum = "fe1e430bdcf30c9fdc25053b9c459bb1a4672af4617b6c783d7d91dc17c6bbb0"
 dependencies = [
- "encoding_rs",
- "failure",
- "log",
  "memchr",
 ]
 
@@ -1819,9 +1816,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.46"
+version = "1.0.48"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21b01d7f0288608a01dca632cf1df859df6fd6ffa885300fc275ce2ba6221953"
+checksum = "9371ade75d4c2d6cb154141b9752cf3781ec9c05e0e5cf35060e1e70ee7b9c25"
 dependencies = [
  "itoa",
  "ryu",
