@@ -41,7 +41,7 @@ impl Identity {
 
     /// 获取身份标识
     ///
-    /// TODO: Deserialize<'de> 玩不转，只能用 DeserializeOwned，是跟 extensions() 返回值的声明周期有关，还是我用法不对
+    /// TODO: Deserialize<'de> 玩不转，只能用 DeserializeOwned，是跟 extensions() 返回值的生命周期有关，还是我用法不对
     pub fn get<T: Serialize + DeserializeOwned>(&self) -> Option<T> {
         if let Some(cache) = self.0.extensions().get::<IdentityCache>() {
             match cache {

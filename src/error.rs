@@ -50,6 +50,10 @@ impl From<tokio_postgres::Error> for Error {
     }
 }
 
+/// 为 Error 实现 From<$t>
+///
+/// $t 为错误类型， $k 为对应的 Kind 值
+///
 macro_rules! simple_to_error {
     ($t:ty, $k:expr) => {
         impl From<$t> for Error {
