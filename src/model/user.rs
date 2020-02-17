@@ -1,6 +1,14 @@
 use super::*;
 use chrono::{NaiveDate, NaiveDateTime};
 
+/// 性别
+#[derive(Serialize, Deserialize, Debug, Display, PartialEq, Eq, Clone, ToSql, FromSql)]
+pub enum Gender {
+    Unknown,
+    Male,
+    Female,
+}
+
 /// 用户
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, PostgresMapper)]
 #[pg_mapper(table = "user_info")]
@@ -9,7 +17,7 @@ pub struct UserInfo {
     pub username: String,
     pub nickname: String,
     pub avatar: Option<String>,
-    pub gender: i32,
+    pub gender: Gender,
     pub birthday: Option<NaiveDate>,
     pub create_time: NaiveDateTime,
     pub update_time: NaiveDateTime,

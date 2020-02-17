@@ -11,6 +11,12 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+create type "Gender" as enum (
+    'Unknown',
+    'Male',
+    'Female'
+    );
+
 create type "AuthType" as enum (
     'Username',
     'Phone',
@@ -28,7 +34,7 @@ create table user_info
     username text not null,
     nickname text not null,
     avatar text,
-    gender integer default 0 not null,
+    gender "Gender" default 'Unknown' not null,
     birthday date,
     update_time timestamp default now() not null,
     create_time timestamp default now() not null,
