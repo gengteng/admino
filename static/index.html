@@ -65,10 +65,12 @@
                 data: JSON.stringify(json),
                 dataType: "json",
                 success: function (message) {
-                    alert(name + "成功: " + JSON.stringify(message));
+                    alert(name + "成功: \r\n" + JSON.stringify(message));
                 },
                 error: function (message) {
-                    alert(name + "失败: " + JSON.stringify(message));
+                    alert(name + "失败: \r\n" + message.status + "\r\n"
+                        + message.statusText + "\r\n"
+                        + JSON.stringify(message.responseJSON));
                 }
             });
         }
@@ -77,10 +79,12 @@
                 type: "GET",
                 url: url,
                 success: function (message) {
-                    alert(name + "成功: " + JSON.stringify(message));
+                    alert(name + "成功: \r\n" + JSON.stringify(message));
                 },
                 error: function (message) {
-                    alert(name + "失败: " + JSON.stringify(message));
+                    alert(name + "失败: \r\n" + message.status + "\r\n"
+                        + message.statusText + "\r\n"
+                        + JSON.stringify(message.responseJSON));
                 }
             });
         }
