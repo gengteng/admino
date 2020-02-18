@@ -1,7 +1,7 @@
-use super::{IntoJsonResult, PgPool};
+use super::IntoJsonResult;
 use crate::error::Error;
 use crate::model::{Count, Id, Role};
-use crate::service::role::{query_role_by_id, query_roles, query_roles_count};
+use crate::service::role::RoleService;
 use crate::util::db::Pager;
 use actix_web::{web, web::Json, web::Path, Scope};
 
@@ -12,23 +12,20 @@ pub fn get_role_scope() -> Scope {
         .service(web::resource("/{id}").route(web::get().to(get_role_by_id)))
 }
 
-async fn get_roles_count(pg_pool: web::Data<PgPool>) -> Result<Json<Count>, Error> {
-    let pg_client = pg_pool.get().await?;
-    query_roles_count(&pg_client).await.json()
+async fn get_roles_count(role_svc: web::Data<RoleService>) -> Result<Json<Count>, Error> {
+    role_svc.query_roles_count().await.json()
 }
 
 async fn get_roles(
-    pg_pool: web::Data<PgPool>,
+    role_svc: web::Data<RoleService>,
     pager: Path<Pager>,
 ) -> Result<Json<Vec<Role>>, Error> {
-    let pg_client = pg_pool.get().await?;
-    query_roles(&pg_client, &pager).await.json()
+    role_svc.query_roles(&pager).await.json()
 }
 
 async fn get_role_by_id(
-    pg_pool: web::Data<PgPool>,
+    role_svc: web::Data<RoleService>,
     id: web::Path<Id>,
 ) -> Result<Json<Role>, Error> {
-    let pg_client = pg_pool.get().await?;
-    query_role_by_id(&pg_client, id.into_inner()).await.json()
+    role_svc.query_role_by_id(id.into_inner()).await.json()
 }

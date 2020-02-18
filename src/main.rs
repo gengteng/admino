@@ -1,8 +1,8 @@
 use crate::controller::role::get_role_scope;
 use crate::controller::user::get_user_scope;
 use crate::error::Exception;
+use crate::service::LoadAllService;
 use crate::util::identity::IdentityFactory;
-use actix_web::client::Client as HttpClient;
 use actix_web::{middleware, App, HttpServer};
 use deadpool_postgres::Config as PgConfig;
 use deadpool_redis::Config as RedisConfig;
@@ -55,9 +55,7 @@ async fn main() -> Result<(), Exception> {
     let http_config = http.clone();
     HttpServer::new(move || {
         App::new()
-            .data(HttpClient::new())
-            .data(pg_pool.clone())
-            .data(redis_pool.clone())
+            .load_all_service(pg_pool.clone(), redis_pool.clone())
             .wrap(middleware::Logger::default())
             .wrap(
                 IdentityFactory::new(&http_config.secure_key, redis_pool.clone()).name("identity"),
