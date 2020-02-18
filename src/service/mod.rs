@@ -1,3 +1,4 @@
+use crate::opt::{PgPool, RedisPool};
 use crate::service::role::RoleService;
 use crate::service::user::UserService;
 use actix_service::ServiceFactory;
@@ -7,9 +8,6 @@ use actix_web::App;
 
 pub mod role;
 pub mod user;
-
-pub type RedisPool = deadpool_redis::Pool;
-pub type PgPool = deadpool_postgres::Pool;
 
 pub trait LoadAllService {
     fn load_all_service(self, pg_pool: PgPool, redis_pool: RedisPool) -> Self;

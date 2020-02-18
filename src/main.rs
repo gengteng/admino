@@ -1,13 +1,9 @@
-use crate::controller::role::get_role_scope;
-use crate::controller::user::get_user_scope;
+use crate::controller::LoadAllController;
 use crate::error::Exception;
 use crate::service::LoadAllService;
 use crate::util::identity::IdentityFactory;
 use actix_web::{middleware, App, HttpServer};
-use deadpool_postgres::Config as PgConfig;
-use deadpool_redis::Config as RedisConfig;
 use opt::Opts;
-use tokio_postgres::NoTls;
 
 mod controller;
 mod error;
@@ -36,7 +32,7 @@ async fn main() -> Result<(), Exception> {
     env_logger::init();
 
     // 初始化连接池，并且尝试取个连接
-    let pg_pool = PgConfig::from(db).create_pool(NoTls)?;
+    let pg_pool = db.create_pool()?;
     drop(
         pg_pool
             .get()
@@ -44,7 +40,7 @@ async fn main() -> Result<(), Exception> {
             .map_err(|e| format!("Postgres 连接错误: {}", e))?,
     );
 
-    let redis_pool = RedisConfig::from(redis).create_pool()?;
+    let redis_pool = redis.create_pool()?;
     drop(
         redis_pool
             .get()
@@ -55,13 +51,12 @@ async fn main() -> Result<(), Exception> {
     let http_config = http.clone();
     HttpServer::new(move || {
         App::new()
-            .load_all_service(pg_pool.clone(), redis_pool.clone())
             .wrap(middleware::Logger::default())
             .wrap(
                 IdentityFactory::new(&http_config.secure_key, redis_pool.clone()).name("identity"),
             )
-            .service(get_user_scope())
-            .service(get_role_scope())
+            .load_all_service(pg_pool.clone(), redis_pool.clone())
+            .load_all_controller()
             .service(actix_files::Files::new("/", &http_config.html).index_file("index.html"))
     })
     .bind(http.addrs.as_slice())?

@@ -7,6 +7,10 @@ use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use tokio::fs::File;
 use tokio::prelude::*;
+use tokio_postgres::NoTls;
+
+pub type RedisPool = deadpool_redis::Pool;
+pub type PgPool = deadpool_postgres::Pool;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Opts {
@@ -34,6 +38,12 @@ pub struct DbOpts {
     password: String,
 }
 
+impl DbOpts {
+    pub fn create_pool(self) -> Result<PgPool, Exception> {
+        Ok(PgConfig::from(self).create_pool(NoTls)?)
+    }
+}
+
 impl From<DbOpts> for PgConfig {
     fn from(opts: DbOpts) -> Self {
         let mut pg_config = PgConfig::default();
@@ -48,6 +58,12 @@ impl From<DbOpts> for PgConfig {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RedisOpts {
     pub url: String,
+}
+
+impl RedisOpts {
+    pub fn create_pool(self) -> Result<RedisPool, Exception> {
+        Ok(RedisConfig::from(self).create_pool()?)
+    }
 }
 
 impl From<RedisOpts> for RedisConfig {
