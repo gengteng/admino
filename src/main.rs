@@ -35,9 +35,22 @@ async fn main() -> Result<(), Exception> {
     std::env::set_var("RUST_LOG", &log.level.to_string());
     env_logger::init();
 
+    // 初始化连接池，并且尝试取个连接
     let pg_pool = PgConfig::from(db).create_pool(NoTls)?;
+    drop(
+        pg_pool
+            .get()
+            .await
+            .map_err(|e| format!("Postgres 连接错误: {}", e))?,
+    );
 
     let redis_pool = RedisConfig::from(redis).create_pool()?;
+    drop(
+        redis_pool
+            .get()
+            .await
+            .map_err(|e| format!("Redis 连接错误: {}", e))?,
+    );
 
     let http_config = http.clone();
     HttpServer::new(move || {
