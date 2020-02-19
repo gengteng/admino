@@ -9,11 +9,11 @@ use actix_web::App;
 pub mod role;
 pub mod user;
 
-pub trait LoadAllService {
-    fn load_all_service(self, pg_pool: PgPool, redis_pool: RedisPool) -> Self;
+pub trait LoadAllServices {
+    fn load_all_services(self, pg_pool: PgPool, redis_pool: RedisPool) -> Self;
 }
 
-impl<T, B> LoadAllService for App<T, B>
+impl<T, B> LoadAllServices for App<T, B>
 where
     B: MessageBody,
     T: ServiceFactory<
@@ -24,7 +24,7 @@ where
         InitError = (),
     >,
 {
-    fn load_all_service(self, pg_pool: PgPool, redis_pool: RedisPool) -> Self {
+    fn load_all_services(self, pg_pool: PgPool, redis_pool: RedisPool) -> Self {
         self.data(RoleService::new(pg_pool.clone()))
             .data(UserService::new(pg_pool, redis_pool))
     }

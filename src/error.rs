@@ -132,15 +132,17 @@ impl Kind {
         &Kind::new(1, "用户尚未登录", StatusCode::UNAUTHORIZED);
     pub const NO_PERMISSION: &'static Kind =
         &Kind::new(2, "用户没有权限", StatusCode::UNAUTHORIZED);
+    pub const INVALID_USERNAME: &'static Kind =
+        &Kind::new(3, "用户名格式错误", StatusCode::BAD_REQUEST);
     pub const INVALID_PHONE_NUMBER: &'static Kind =
-        &Kind::new(3, "手机号格式错误", StatusCode::BAD_REQUEST);
+        &Kind::new(4, "手机号格式错误", StatusCode::BAD_REQUEST);
     pub const INVALID_EMAIL: &'static Kind =
-        &Kind::new(4, "电子邮件格式错误", StatusCode::BAD_REQUEST);
-    pub const LOGIN_FAILED: &'static Kind = &Kind::new(5, "登录失败", StatusCode::UNAUTHORIZED);
+        &Kind::new(5, "电子邮件格式错误", StatusCode::BAD_REQUEST);
+    pub const LOGIN_FAILED: &'static Kind = &Kind::new(6, "登录失败", StatusCode::UNAUTHORIZED);
     pub const INVALID_AUTH_CODE: &'static Kind =
-        &Kind::new(6, "验证码错误", StatusCode::BAD_REQUEST);
+        &Kind::new(7, "验证码错误", StatusCode::BAD_REQUEST);
     pub const DUPLICATE_IDENTITY: &'static Kind =
-        &Kind::new(7, "该身份标识已经注册", StatusCode::BAD_REQUEST);
+        &Kind::new(8, "该身份标识已经注册", StatusCode::BAD_REQUEST);
     pub const EMPTY_RESULT: &'static Kind = &Kind::new(8, "查询结果为空", StatusCode::NOT_FOUND);
 
     /// 错误（服务端错误，code<0 & status=5XX)

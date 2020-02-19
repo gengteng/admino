@@ -1,6 +1,6 @@
-use crate::controller::LoadAllController;
+use crate::controller::LoadAllControllers;
 use crate::error::Exception;
-use crate::service::LoadAllService;
+use crate::service::LoadAllServices;
 use crate::util::identity::IdentityFactory;
 use actix_web::{middleware, App, HttpServer};
 use opt::Opts;
@@ -55,8 +55,8 @@ async fn main() -> Result<(), Exception> {
             .wrap(
                 IdentityFactory::new(&http_config.secure_key, redis_pool.clone()).name("identity"),
             )
-            .load_all_service(pg_pool.clone(), redis_pool.clone())
-            .load_all_controller()
+            .load_all_services(pg_pool.clone(), redis_pool.clone())
+            .load_all_controllers()
             .service(actix_files::Files::new("/", &http_config.html).index_file("index.html"))
     })
     .bind(http.addrs.as_slice())?

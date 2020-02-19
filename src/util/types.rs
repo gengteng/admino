@@ -8,6 +8,36 @@ use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::str::FromStr;
 
+macro_rules! impl_se {
+    ($t:ty) => {
+        impl Serialize for $t {
+            fn serialize<S>(
+                &self,
+                serializer: S,
+            ) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+            where
+                S: Serializer,
+            {
+                serializer.serialize_str(&self.0)
+            }
+        }
+    };
+}
+
+macro_rules! impl_de {
+    ($t:ty) => {
+        impl<'de> Deserialize<'de> for $t {
+            fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                let s = String::deserialize(deserializer)?;
+                <$t>::from_str(&s).map_err(de::Error::custom)
+            }
+        }
+    };
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub struct AuthCode {
     pub code: String,
@@ -108,15 +138,7 @@ impl Serialize for Phone {
     }
 }
 
-impl<'de> Deserialize<'de> for Phone {
-    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        Phone::new(&s).map_err(de::Error::custom)
-    }
-}
+impl_de!(Phone);
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Email(String);
@@ -177,21 +199,67 @@ impl ToSql for Email {
     to_sql_checked!();
 }
 
-impl Serialize for Email {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(&self.0)
+impl_se!(Email);
+impl_de!(Email);
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Username(String);
+
+impl FromStr for Username {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.chars().count() > 32 {
+            Err(Kind::INVALID_USERNAME.into())
+        } else {
+            Ok(Self(s.into()))
+        }
     }
 }
 
-impl<'de> Deserialize<'de> for Email {
-    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        Email::new(&s).map_err(de::Error::custom)
+impl Username {
+    pub fn new(s: &str) -> Result<Self, Error> {
+        Self::from_str(s)
     }
 }
+
+impl fmt::Display for Username {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl<'a> FromSql<'a> for Username {
+    fn from_sql(ty: &Type, raw: &'a [u8]) -> Result<Self, Exception> {
+        let s = <&str as FromSql>::from_sql(ty, raw)?;
+        let username =
+            Username::from_str(s).map_err(|_| String::from("从数据库中读出的用户名格式错误"))?;
+        Ok(username)
+    }
+
+    fn accepts(ty: &Type) -> bool {
+        <&str as FromSql>::accepts(ty)
+    }
+}
+
+impl ToSql for Username {
+    fn to_sql(&self, ty: &Type, out: &mut BytesMut) -> Result<IsNull, Exception>
+    where
+        Self: Sized,
+    {
+        let s = self.0.clone();
+        s.to_sql(ty, out)
+    }
+
+    fn accepts(ty: &Type) -> bool
+    where
+        Self: Sized,
+    {
+        <&str as ToSql>::accepts(ty)
+    }
+
+    to_sql_checked!();
+}
+
+impl_se!(Username);
+impl_de!(Username);
