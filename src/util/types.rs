@@ -8,6 +8,7 @@ use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::str::FromStr;
 
+/// 为类型 $t 实现 Serialize
 macro_rules! impl_se {
     ($t:ty) => {
         impl Serialize for $t {
@@ -24,6 +25,7 @@ macro_rules! impl_se {
     };
 }
 
+/// 为类型 $t 实现 Deserialize
 macro_rules! impl_de {
     ($t:ty) => {
         impl<'de> Deserialize<'de> for $t {
@@ -38,6 +40,7 @@ macro_rules! impl_de {
     };
 }
 
+/// 6位数字验证码
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub struct AuthCode {
     pub code: String,
@@ -67,6 +70,7 @@ impl AuthCode {
     }
 }
 
+/// 手机号
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Phone(PhoneNumber);
 
@@ -140,6 +144,7 @@ impl Serialize for Phone {
 
 impl_de!(Phone);
 
+/// Email
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Email(String);
 
@@ -202,6 +207,7 @@ impl ToSql for Email {
 impl_se!(Email);
 impl_de!(Email);
 
+/// 用户名
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Username(String);
 

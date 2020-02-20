@@ -31,7 +31,8 @@ async fn main() -> Result<(), Exception> {
     std::env::set_var("RUST_LOG", &log.level.to_string());
     env_logger::init();
 
-    // 初始化连接池，并且尝试取个连接
+    // 初始化连接池，并且尝试取个连接，让问题提前暴露
+    // 因为连接池是懒加载的，初始化时并不会建立连接，只有在真正运行起来才会暴露连接错误
     let pg_pool = db.create_pool()?;
     drop(
         pg_pool
