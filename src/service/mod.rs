@@ -11,11 +11,11 @@ pub(crate) mod permission;
 pub(crate) mod role;
 pub(crate) mod user;
 
-pub trait LoadAllService {
-    fn load_all_service(self, pg_pool: PgPool, redis_pool: RedisPool) -> Self;
+pub trait LoadAllServices {
+    fn load_all_services(self, pg_pool: PgPool, redis_pool: RedisPool) -> Self;
 }
 
-impl<T, B> LoadAllService for App<T, B>
+impl<T, B> LoadAllServices for App<T, B>
 where
     B: MessageBody,
     T: ServiceFactory<
@@ -26,7 +26,7 @@ where
         InitError = (),
     >,
 {
-    fn load_all_service(self, pg_pool: PgPool, redis_pool: RedisPool) -> Self {
+    fn load_all_services(self, pg_pool: PgPool, redis_pool: RedisPool) -> Self {
         self.data(UserService::new(pg_pool.clone(), redis_pool))
             .data(RoleService::new(pg_pool.clone()))
             .data(PermissionService::new(pg_pool))

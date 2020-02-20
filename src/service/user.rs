@@ -1,7 +1,7 @@
 use crate::error::{Error, Kind};
 use crate::model::*;
 use crate::opt::{PgPool, RedisPool};
-use crate::util::types::{AuthCode, Phone};
+use crate::util::types::{AuthCode, Phone, Username};
 use deadpool_redis::cmd;
 use log::*;
 use std::fmt::Display;
@@ -68,7 +68,7 @@ impl UserService {
 
     pub async fn create_user_with_phone(
         &self,
-        username: &str,
+        username: &Username,
         nickname: &str,
         phone: &Phone,
     ) -> Result<UserInfo, Error> {
@@ -95,7 +95,7 @@ impl UserService {
 
     pub async fn sign_in_with_username(
         &self,
-        username: &str,
+        username: &Username,
         _password: &str,
     ) -> Result<UserInfo, Error> {
         let pg = self.pg_pool.get().await?;
