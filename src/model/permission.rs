@@ -15,3 +15,10 @@ pub struct RolePermission {
     pub role_id: Id,
     pub permission_id: Id,
 }
+
+// ------------------------------------------------
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+pub struct PermissionContent {
+    pub permission_name: String,
+}

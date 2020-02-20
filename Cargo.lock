@@ -290,6 +290,7 @@ version = "0.1.0"
 dependencies = [
  "actix-files",
  "actix-rt",
+ "actix-service",
  "actix-web",
  "chrono",
  "config",

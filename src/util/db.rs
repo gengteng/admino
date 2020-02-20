@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+/// 分页查询条件
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Pager {
     pub rows: i64,
@@ -16,6 +17,7 @@ impl Pager {
     }
 }
 
+/// 所有查询条件
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct QueryCondition {
     pub pager: Pager,

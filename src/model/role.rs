@@ -6,8 +6,8 @@ use super::*;
 pub struct Role {
     pub id: Id,
     pub name: String,
-    max_user: Option<i64>,
-    max_permission: Option<i64>,
+    pub max_user: Option<i64>,
+    pub max_permission: Option<i64>,
 }
 
 /// 角色继承关系
@@ -48,4 +48,13 @@ pub struct ConstraintMutex {
 pub struct ConstraintBaseRequired {
     pub constraint_id: Id,
     pub role_id: Id,
+}
+
+// ------------------------------------------------
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+pub struct RoleContent {
+    pub name: String,
+    pub max_user: Option<i64>,
+    pub max_permission: Option<i64>,
 }
