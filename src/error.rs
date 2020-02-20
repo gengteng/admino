@@ -5,8 +5,10 @@ use serde::Serialize;
 use std::error::Error as StdError;
 use std::fmt;
 
+/// 错误类型，可从各种错误类型转换而来
 pub type Exception = Box<dyn StdError + Sync + Send + 'static>;
 
+/// 包括了静态错误信息和运行时动态错误信息的错误类型
 #[derive(Debug)]
 pub struct Error {
     kind: &'static Kind,
@@ -14,10 +16,12 @@ pub struct Error {
 }
 
 impl Error {
+    /// 简单构造一个只包含静态错误信息的错误对象
     pub fn simple(kind: &'static Kind) -> Self {
         Self::from(kind)
     }
 
+    /// 构造包含静态/动态错误信息的错误对象
     pub fn new<E: StdError + Sync + Send + 'static>(kind: &'static Kind, error: E) -> Self {
         Self {
             kind,
@@ -25,10 +29,12 @@ impl Error {
         }
     }
 
+    /// 获取静态错误信息
     pub fn kind(&self) -> &'static Kind {
         self.kind
     }
 
+    /// 获取动态错误信息
     pub fn detail(&self) -> Option<&Exception> {
         self.detail.as_ref()
     }
@@ -39,6 +45,7 @@ impl From<tokio_postgres::Error> for Error {
         if let Some(e) = e.source() {
             if let Some(e) = e.downcast_ref::<tokio_postgres::error::DbError>() {
                 if let Some(constraint) = e.constraint() {
+                    // 违反了这个约束，表示是这个错误： DUPLICATE_IDENTITY
                     if constraint == "user_auth_type_identity_unique" {
                         return Kind::DUPLICATE_IDENTITY.into();
                     }
@@ -75,7 +82,8 @@ simple_to_error!(
 );
 simple_to_error!(redis::RedisError, Kind::CACHE_ERROR);
 
-/// 错误
+/// 静态错误类型
+///
 #[derive(Debug)]
 pub struct Kind {
     code: i64,
@@ -97,6 +105,7 @@ impl fmt::Display for Kind {
 
 #[allow(dead_code)]
 impl Kind {
+    /// 与一个动态错误信息共同构造一个错误对象
     pub fn with_detail<E: StdError + Sync + Send + 'static>(&'static self, error: E) -> Error {
         Error {
             kind: self,
@@ -104,18 +113,22 @@ impl Kind {
         }
     }
 
+    /// 返回静态的错误码
     pub fn code(&self) -> i64 {
         self.code
     }
 
+    /// 返回对应的HTTP状态码
     pub fn status(&self) -> StatusCode {
         self.status
     }
 
+    /// 返回静态错误描述
     pub fn message(&self) -> &'static str {
         self.message
     }
 
+    /// 只在此处使用的构造函数
     const fn new(code: i64, message: &'static str, status: StatusCode) -> Self {
         Self {
             code,
@@ -132,15 +145,17 @@ impl Kind {
         &Kind::new(1, "用户尚未登录", StatusCode::UNAUTHORIZED);
     pub const NO_PERMISSION: &'static Kind =
         &Kind::new(2, "用户没有权限", StatusCode::UNAUTHORIZED);
+    pub const INVALID_USERNAME: &'static Kind =
+        &Kind::new(3, "用户名格式错误", StatusCode::BAD_REQUEST);
     pub const INVALID_PHONE_NUMBER: &'static Kind =
-        &Kind::new(3, "手机号格式错误", StatusCode::BAD_REQUEST);
+        &Kind::new(4, "手机号格式错误", StatusCode::BAD_REQUEST);
     pub const INVALID_EMAIL: &'static Kind =
-        &Kind::new(4, "电子邮件格式错误", StatusCode::BAD_REQUEST);
-    pub const LOGIN_FAILED: &'static Kind = &Kind::new(5, "登录失败", StatusCode::UNAUTHORIZED);
+        &Kind::new(5, "电子邮件格式错误", StatusCode::BAD_REQUEST);
+    pub const LOGIN_FAILED: &'static Kind = &Kind::new(6, "登录失败", StatusCode::UNAUTHORIZED);
     pub const INVALID_AUTH_CODE: &'static Kind =
-        &Kind::new(6, "验证码错误", StatusCode::BAD_REQUEST);
+        &Kind::new(7, "验证码错误", StatusCode::BAD_REQUEST);
     pub const DUPLICATE_IDENTITY: &'static Kind =
-        &Kind::new(7, "该身份标识已经注册", StatusCode::BAD_REQUEST);
+        &Kind::new(8, "该身份标识已经注册", StatusCode::BAD_REQUEST);
     pub const EMPTY_RESULT: &'static Kind = &Kind::new(8, "查询结果为空", StatusCode::NOT_FOUND);
 
     /// 错误（服务端错误，code<0 & status=5XX)

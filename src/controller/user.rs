@@ -6,7 +6,7 @@ use crate::model::{
 };
 use crate::service::user::UserService;
 use crate::util::identity::Identity;
-use crate::util::types::{AuthCode, Email, Phone};
+use crate::util::types::{AuthCode, Email, Phone, Username};
 use actix_web::web::Json;
 use actix_web::{web, Scope};
 
@@ -63,6 +63,7 @@ async fn register_with_phone(
 ) -> Result<Json<UserInfo>, Error> {
     let reg_param = reg_param.into_inner();
 
+    let username = Username::new(&reg_param.username)?;
     let phone = Phone::new(&reg_param.phone)?;
     let auth_code = AuthCode::new(&reg_param.auth_code)?;
 
@@ -74,7 +75,7 @@ async fn register_with_phone(
     }
 
     user_svc
-        .create_user_with_phone(&reg_param.username, &reg_param.nickname, &phone)
+        .create_user_with_phone(&username, &reg_param.nickname, &phone)
         .await
         .json()
 }
@@ -86,9 +87,11 @@ async fn sign_in(
 ) -> Result<Json<UserInfo>, Error> {
     let sign_in_params = sign_in_params.into_inner();
 
+    let username = Username::new(&sign_in_params.identity)?;
+
     let user_info = match sign_in_params.auth_type {
         AuthType::Username => user_svc
-            .sign_in_with_username(&sign_in_params.identity, &sign_in_params.credential1)
+            .sign_in_with_username(&username, &sign_in_params.credential1)
             .await
             .or_else(|_| Err(Error::simple(Kind::LOGIN_FAILED)))?,
         AuthType::Phone => {

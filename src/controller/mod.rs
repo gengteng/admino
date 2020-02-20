@@ -19,11 +19,11 @@ impl<T, E: Into<Error>> IntoJsonResult<T, E> for Result<T, E> {
     }
 }
 
-pub trait LoadAllController {
-    fn load_all_controller(self) -> Self;
+pub trait LoadAllControllers {
+    fn load_all_controllers(self) -> Self;
 }
 
-impl<T, B> LoadAllController for App<T, B>
+impl<T, B> LoadAllControllers for App<T, B>
 where
     B: MessageBody,
     T: ServiceFactory<
@@ -34,7 +34,7 @@ where
         InitError = (),
     >,
 {
-    fn load_all_controller(self) -> Self {
+    fn load_all_controllers(self) -> Self {
         self.service(user::get_user_scope())
             .service(role::get_role_scope())
             .service(permission::get_permission_scope())
