@@ -1,6 +1,6 @@
 # Admino
 
-[WIP] 个人学习项目，实现一个后台管理系统。
+[WIP] 个人学习项目，用 Actix + Angular + PostgreSQL 实现一个后台管理系统。
 
 ## RoadMap
 

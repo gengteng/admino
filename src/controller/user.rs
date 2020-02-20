@@ -1,7 +1,10 @@
 use super::IntoJsonResult;
 use crate::error::{Error, Kind};
-use crate::model::*;
-use crate::service::user::*;
+use crate::model::{
+    AuthType, GetAuthCodeParams, Id, RegisterParams, RolePermission, SignInParams, UserAuth,
+    UserInfo,
+};
+use crate::service::user::UserService;
 use crate::util::identity::Identity;
 use crate::util::types::{AuthCode, Email, Phone};
 use actix_web::web::Json;
@@ -105,7 +108,7 @@ async fn sign_in(
 async fn sign_out(identity: Identity) -> Result<&'static str, Error> {
     if identity.is_user() {
         identity.sign_out();
-        Ok("logged out")
+        Ok("")
     } else {
         Err(Kind::USER_NOT_SIGNED_IN.into())
     }

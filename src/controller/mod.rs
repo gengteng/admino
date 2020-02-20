@@ -1,5 +1,6 @@
-pub mod role;
-pub mod user;
+mod permission;
+mod role;
+mod user;
 
 use crate::error::Error;
 use actix_service::ServiceFactory;
@@ -36,5 +37,6 @@ where
     fn load_all_controller(self) -> Self {
         self.service(user::get_user_scope())
             .service(role::get_role_scope())
+            .service(permission::get_permission_scope())
     }
 }

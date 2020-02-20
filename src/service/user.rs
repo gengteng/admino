@@ -1,6 +1,6 @@
 use crate::error::{Error, Kind};
 use crate::model::*;
-use crate::service::{PgPool, RedisPool};
+use crate::opt::{PgPool, RedisPool};
 use crate::util::types::{AuthCode, Phone};
 use deadpool_redis::cmd;
 use log::*;
