@@ -23,12 +23,21 @@ pub struct Opts {
 
 impl Opts {
     /// 打开配置文件
-    pub async fn open<P: AsRef<Path>>(path: P) -> Result<Self, Exception> {
+    pub async fn open_json<P: AsRef<Path>>(path: P) -> Result<Self, Exception> {
+        let vec = Self::open(path).await?;
+        Ok(serde_json::from_slice(vec.as_slice())?)
+    }
+
+    pub async fn open_toml<P: AsRef<Path>>(path: P) -> Result<Self, Exception> {
+        let vec = Self::open(path).await?;
+        Ok(toml::from_slice(vec.as_slice())?)
+    }
+
+    async fn open<P: AsRef<Path>>(path: P) -> Result<Vec<u8>, Exception> {
         let mut file = File::open(path.as_ref()).await?;
         let mut vec = Vec::with_capacity(file.metadata().await?.len() as usize);
         file.read_to_end(&mut vec).await?;
-
-        Ok(serde_json::from_slice(vec.as_slice())?)
+        Ok(vec)
     }
 }
 

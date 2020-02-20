@@ -316,6 +316,7 @@ dependencies = [
  "tokio-pg-mapper",
  "tokio-pg-mapper-derive",
  "tokio-postgres",
+ "toml",
 ]
 
 [[package]]

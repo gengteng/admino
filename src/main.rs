@@ -3,6 +3,7 @@ use crate::error::Exception;
 use crate::service::LoadAllServices;
 use crate::util::identity::IdentityFactory;
 use actix_web::{middleware, App, HttpServer};
+use futures::TryFutureExt;
 use opt::Opts;
 
 mod controller;
@@ -25,7 +26,9 @@ async fn main() -> Result<(), Exception> {
         redis,
         http,
         log,
-    } = Opts::open("config.json").await?;
+    } = Opts::open_toml("config.toml")
+        .or_else(|_e| Opts::open_json("config.json"))
+        .await?;
 
     // 设置日志
     std::env::set_var("RUST_LOG", &log.level.to_string());
