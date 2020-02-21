@@ -43,7 +43,7 @@ async fn delete_permission(
 async fn update_permission(
     perm_svc: web::Data<PermissionService>,
     id: web::Path<Id>,
-    perm: web::Json<PermissionContent>,
+    perm: web::Json<Permission>,
 ) -> Result<Json<bool>, Error> {
     perm_svc
         .update_permission(id.into_inner(), &perm)

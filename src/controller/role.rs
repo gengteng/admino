@@ -35,7 +35,7 @@ async fn delete_role(
 async fn update_role(
     role_svc: web::Data<RoleService>,
     id: web::Path<Id>,
-    role: web::Json<RoleContent>,
+    role: web::Json<Role>,
 ) -> Result<Json<bool>, Error> {
     role_svc.update_role(id.into_inner(), &role).await.json()
 }

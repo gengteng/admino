@@ -79,13 +79,13 @@ impl RoleService {
         Ok(count == 1)
     }
 
-    pub async fn update_role(&self, id: Id, role: &RoleContent) -> Result<bool, Error> {
+    pub async fn update_role(&self, id: Id, role: &Role) -> Result<bool, Error> {
         let pg_client = self.pg_pool.get().await?;
 
         let count = pg_client
             .execute(
-                "update role set name = $1, max_user = $2, max_permission = $3 where id = $4",
-                &[&role.name, &role.max_user, &role.max_permission, &id],
+                "update role set id = $1, name = $2, max_user = $3, max_permission = $4 where id = $5",
+                &[&role.id, &role.name, &role.max_user, &role.max_permission, &id],
             )
             .await?;
 
