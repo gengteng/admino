@@ -79,17 +79,13 @@ impl PermissionService {
         Ok(count == 1)
     }
 
-    pub async fn update_permission(
-        &self,
-        id: Id,
-        permission: &PermissionContent,
-    ) -> Result<bool, Error> {
+    pub async fn update_permission(&self, id: Id, permission: &Permission) -> Result<bool, Error> {
         let pg_client = self.pg_pool.get().await?;
 
         let count = pg_client
             .execute(
-                "update permission set permission_name = $1 where id = $2",
-                &[&permission.permission_name, &id],
+                "update permission set id = $1, permission_name = $2 where id = $3",
+                &[&permission.id, &permission.permission_name, &id],
             )
             .await?;
 
