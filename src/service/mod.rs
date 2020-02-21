@@ -1,3 +1,4 @@
+//! 服务（Service）的实现，使用 deadpool 连接池访问 PostgreSQL / Redis
 use crate::opt::{PgPool, RedisPool};
 use crate::service::permission::PermissionService;
 use crate::service::role::RoleService;
@@ -11,6 +12,8 @@ pub(crate) mod permission;
 pub(crate) mod role;
 pub(crate) mod user;
 
+/// 加载所有服务，已为 `actix_web::app:App` 实现这个 `trait`，
+/// 详见 `main.rs` 中对 `load_all_services` 函数的调用
 pub trait LoadAllServices {
     fn load_all_services(self, pg_pool: PgPool, redis_pool: RedisPool) -> Self;
 }

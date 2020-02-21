@@ -1,3 +1,8 @@
+//! 参考 actix-identity 实现的身份认证服务
+//!
+//! 使用 Redis 存储 Session，
+//! 每次收到 HTTP 请求都尝试使用 Cookie 中的 Key 从 Redis 中取出身份信息
+//!
 use crate::error::{Error, Kind};
 use actix_web::cookie::{Cookie, CookieJar, Key};
 use actix_web::dev::{Payload, Service, ServiceRequest, ServiceResponse, Transform};
@@ -204,6 +209,7 @@ fn make_redis_key(token: &str) -> String {
     redis_key
 }
 
+/// 身份标识中间件
 pub struct IdentityMiddleware<S> {
     // This is special: We need this to avoid lifetime issues.
     service: Rc<RefCell<S>>,

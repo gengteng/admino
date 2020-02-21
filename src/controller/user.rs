@@ -1,3 +1,5 @@
+//! 用户及登录相关控制器
+//!
 use super::IntoJsonResult;
 use crate::error::{Error, Kind};
 use crate::model::{

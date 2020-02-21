@@ -1,9 +1,11 @@
+//! 角色相关服务
 use crate::error::{Error, Kind};
 use crate::model::{Count, Id, Role, RoleContent};
 use crate::opt::PgPool;
 use crate::util::db::Pager;
 use tokio_pg_mapper::FromTokioPostgresRow;
 
+/// 角色相关服务
 pub struct RoleService {
     pg_pool: PgPool,
 }

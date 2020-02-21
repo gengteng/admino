@@ -1,3 +1,4 @@
+//! 角色相关模型
 use super::*;
 
 /// 角色
@@ -52,6 +53,7 @@ pub struct ConstraintBaseRequired {
 
 // ------------------------------------------------
 
+/// 创建角色时所需的字段
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub struct RoleContent {
     pub name: String,

@@ -1,9 +1,11 @@
+//! 权限相关服务
 use crate::error::{Error, Kind};
 use crate::model::{Count, Id, Permission, PermissionContent};
 use crate::opt::PgPool;
 use crate::util::db::Pager;
 use tokio_pg_mapper::FromTokioPostgresRow;
 
+/// 权限相关服务
 pub struct PermissionService {
     pg_pool: PgPool,
 }

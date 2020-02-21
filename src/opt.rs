@@ -1,3 +1,4 @@
+//! 配置
 use crate::error::Exception;
 use deadpool_postgres::Config as PgConfig;
 use deadpool_redis::Config as RedisConfig;
@@ -22,12 +23,12 @@ pub struct Opts {
 }
 
 impl Opts {
-    /// 打开配置文件
+    /// 打开 JSON 格式的配置文件
     pub async fn open_json<P: AsRef<Path>>(path: P) -> Result<Self, Exception> {
         let vec = Self::open(path).await?;
         Ok(serde_json::from_slice(vec.as_slice())?)
     }
-
+    /// 打开 TOML 格式的配置文件
     pub async fn open_toml<P: AsRef<Path>>(path: P) -> Result<Self, Exception> {
         let vec = Self::open(path).await?;
         Ok(toml::from_slice(vec.as_slice())?)
@@ -68,7 +69,7 @@ impl From<DbOpts> for PgConfig {
     }
 }
 
-/// Redis配置项
+/// Redis 配置
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RedisOpts {
     pub url: String,

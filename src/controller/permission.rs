@@ -1,3 +1,5 @@
+//! 权限相关控制器
+//!
 use crate::controller::IntoJsonResult;
 use crate::error::Error;
 use crate::model::{Count, Id, Permission, PermissionContent};

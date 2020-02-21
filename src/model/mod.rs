@@ -1,3 +1,4 @@
+//! 数据模型定义
 pub use serde::{Deserialize, Serialize};
 pub use tokio_pg_mapper_derive::PostgresMapper;
 

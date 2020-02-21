@@ -1,3 +1,4 @@
+//! 用户及登录相关服务
 use crate::error::{Error, Kind};
 use crate::model::*;
 use crate::opt::{PgPool, RedisPool};
@@ -7,6 +8,7 @@ use log::*;
 use std::fmt::Display;
 use tokio_pg_mapper::FromTokioPostgresRow;
 
+/// 用户及登录相关服务
 pub struct UserService {
     pg_pool: PgPool,
     redis_pool: RedisPool,
