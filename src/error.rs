@@ -1,3 +1,4 @@
+//! 所有错误类型定义
 use actix_web::body::Body;
 use actix_web::http::{header, StatusCode};
 use actix_web::HttpResponse;
@@ -5,7 +6,7 @@ use serde::Serialize;
 use std::error::Error as StdError;
 use std::fmt;
 
-/// 错误类型，可从各种错误类型转换而来
+/// 动态错误类型，可从各种错误类型转换而来
 pub type Exception = Box<dyn StdError + Sync + Send + 'static>;
 
 /// 包括了静态错误信息和运行时动态错误信息的错误类型
@@ -140,37 +141,51 @@ impl Kind {
     /// 成功
     pub const OK: &'static Kind = &Kind::new(0, "成功", StatusCode::OK);
 
-    /// 失败（客户端错误， code>0 & status=4XX）
+    /// 用户尚未登录(1)
     pub const USER_NOT_SIGNED_IN: &'static Kind =
         &Kind::new(1, "用户尚未登录", StatusCode::UNAUTHORIZED);
+    /// 用户没有权限(2)
     pub const NO_PERMISSION: &'static Kind =
         &Kind::new(2, "用户没有权限", StatusCode::UNAUTHORIZED);
+    /// 用户名格式错误(3)
     pub const INVALID_USERNAME: &'static Kind =
         &Kind::new(3, "用户名格式错误", StatusCode::BAD_REQUEST);
+    /// 手机号格式错误(4)
     pub const INVALID_PHONE_NUMBER: &'static Kind =
         &Kind::new(4, "手机号格式错误", StatusCode::BAD_REQUEST);
+    /// 电子邮件格式错误(5)
     pub const INVALID_EMAIL: &'static Kind =
         &Kind::new(5, "电子邮件格式错误", StatusCode::BAD_REQUEST);
+    /// 登录失败(6)
     pub const LOGIN_FAILED: &'static Kind = &Kind::new(6, "登录失败", StatusCode::UNAUTHORIZED);
+    /// 验证码错误(7)
     pub const INVALID_AUTH_CODE: &'static Kind =
         &Kind::new(7, "验证码错误", StatusCode::BAD_REQUEST);
+    /// 该身份标识已经注册(8)
     pub const DUPLICATE_IDENTITY: &'static Kind =
         &Kind::new(8, "该身份标识已经注册", StatusCode::BAD_REQUEST);
+    /// 查询结果为空(9)
     pub const EMPTY_RESULT: &'static Kind = &Kind::new(8, "查询结果为空", StatusCode::NOT_FOUND);
 
-    /// 错误（服务端错误，code<0 & status=5XX)
+    /// 未知服务器错误(-1)
     pub const UNKNOWN: &'static Kind =
         &Kind::new(-1, "未知服务器错误", StatusCode::INTERNAL_SERVER_ERROR);
+    /// 内部数据格式错误(-2)
     pub const DATA_FORMAT: &'static Kind =
         &Kind::new(-2, "内部数据格式错误", StatusCode::INTERNAL_SERVER_ERROR);
+    /// 数据库错误(-3)
     pub const DB_ERROR: &'static Kind =
         &Kind::new(-3, "数据库错误", StatusCode::INTERNAL_SERVER_ERROR);
+    /// 数据库连接池错误(-4)
     pub const DB_POOL_ERROR: &'static Kind =
         &Kind::new(-4, "数据库连接池错误", StatusCode::INTERNAL_SERVER_ERROR);
+    /// 数据格式错误(-5)
     pub const DB_MAPPER_ERROR: &'static Kind =
         &Kind::new(-5, "数据格式错误", StatusCode::INTERNAL_SERVER_ERROR);
+    /// 缓存错误(-6)
     pub const CACHE_ERROR: &'static Kind =
         &Kind::new(-6, "缓存错误", StatusCode::INTERNAL_SERVER_ERROR);
+    /// 缓存连接池错误(-7)
     pub const CACHE_POOL_ERROR: &'static Kind =
         &Kind::new(-7, "缓存连接池错误", StatusCode::INTERNAL_SERVER_ERROR);
 }
@@ -187,6 +202,7 @@ impl fmt::Display for Error {
     }
 }
 
+/// Error 转换为 HTTP 响应报文体的格式，用于序列化为 JSON
 #[derive(Debug, Serialize)]
 struct ErrorResponse {
     code: i64,

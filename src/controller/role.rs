@@ -1,3 +1,5 @@
+//! 角色相关控制器
+//!
 use super::IntoJsonResult;
 use crate::error::Error;
 use crate::model::{Count, Id, Role, RoleContent};
@@ -18,6 +20,32 @@ pub fn get_role_scope() -> Scope {
         .service(web::resource("/list/{page}/{rows}").route(web::get().to(list_roles)))
 }
 
+/// 创建角色
+///
+/// ## Example
+///
+/// HTTP 请求:
+///
+/// ```
+/// POST http://localhost:30000/role
+/// Content-Type: application/json
+///
+/// {"name": "角色名1", "max_user": 100, "max_permission": 200}
+/// ```
+/// HTTP 响应:
+/// ```
+/// HTTP/1.1 200 OK
+/// content-length: 64
+/// content-type: application/json
+/// date: Fri, 21 Feb 2020 16:39:05 GMT
+///
+/// {
+///   "id": 6,
+///   "name": "角色名1",
+///   "max_user": 100,
+///   "max_permission": 200
+/// }
+/// ```
 async fn create_role(
     role_svc: web::Data<RoleService>,
     params: Json<RoleContent>,
