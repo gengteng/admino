@@ -37,6 +37,17 @@ impl<T, E: Into<Error>> IntoJsonResult<T, E> for Result<T, E> {
     }
 }
 
+/// 表示 HTTP 响应报文体为空
+pub(self) trait EmptyBody<T, E: Into<Error>> {
+    fn empty_body(self) -> Result<&'static str, Error>;
+}
+
+impl<T, E: Into<Error>> EmptyBody<T, E> for Result<T, E> {
+    fn empty_body(self) -> Result<&'static str, Error> {
+        self.map(|_| "").map_err(E::into)
+    }
+}
+
 /// 加载所有控制器，已为 `actix_web::app:App` 实现这个 `trait`，
 /// 详见 `main.rs` 中对 `load_all_controllers` 函数的调用
 pub trait LoadAllControllers {

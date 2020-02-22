@@ -71,17 +71,21 @@ impl RoleService {
         Ok(Role::from_row(row)?)
     }
 
-    pub async fn delete_role(&self, id: Id) -> Result<bool, Error> {
+    pub async fn delete_role(&self, id: Id) -> Result<(), Error> {
         let pg_client = self.pg_pool.get().await?;
 
         let count = pg_client
             .execute("delete from role where id = $1", &[&id])
             .await?;
 
-        Ok(count == 1)
+        if count == 1 {
+            Ok(())
+        } else {
+            Err(Kind::EMPTY_RESULT.into())
+        }
     }
 
-    pub async fn update_role(&self, id: Id, role: &Role) -> Result<bool, Error> {
+    pub async fn update_role(&self, id: Id, role: &Role) -> Result<(), Error> {
         let pg_client = self.pg_pool.get().await?;
 
         let count = pg_client
@@ -91,6 +95,10 @@ impl RoleService {
             )
             .await?;
 
-        Ok(count == 1)
+        if count == 1 {
+            Ok(())
+        } else {
+            Err(Kind::EMPTY_RESULT.into())
+        }
     }
 }

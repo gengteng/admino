@@ -169,8 +169,9 @@ impl Kind {
     /// 违反唯一性约束(8)
     pub const DUPLICATE_VALUE: &'static Kind =
         &Kind::new(8, "违反唯一性约束", StatusCode::BAD_REQUEST);
-    /// 查询结果为空(9)
-    pub const EMPTY_RESULT: &'static Kind = &Kind::new(8, "查询结果为空", StatusCode::NOT_FOUND);
+    /// 请求的资源不存在(9)
+    pub const EMPTY_RESULT: &'static Kind =
+        &Kind::new(8, "请求的资源不存在", StatusCode::NOT_FOUND);
 
     /// 未知服务器错误(-1)
     pub const UNKNOWN: &'static Kind =
