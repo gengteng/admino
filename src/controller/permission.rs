@@ -8,6 +8,7 @@ use crate::util::db::Pager;
 use actix_web::web::Json;
 use actix_web::{web, Scope};
 
+/// 获取所有权限相关的所有路由
 pub fn get_permission_scope() -> Scope {
     web::scope("/permission")
         .service(web::resource("").route(web::post().to(create_permission)))

@@ -8,6 +8,7 @@ use crate::service::role::RoleService;
 use crate::util::db::Pager;
 use actix_web::{web, web::Json, web::Path, Scope};
 
+/// 获取角色相关的所有路由
 pub fn get_role_scope() -> Scope {
     web::scope("/role")
         .service(web::resource("").route(web::post().to(create_role)))
@@ -45,6 +46,37 @@ async fn get_roles_count(role_svc: web::Data<RoleService>) -> Result<Json<Count>
     role_svc.query_roles_count().await.json()
 }
 
+/// 分页查询角色
+///
+/// ## Example
+///
+/// HTTP 请求:
+/// ```
+/// GET /role/list/0/2
+/// ```
+///
+/// HTTP 响应:
+/// ```
+/// HTTP/1.1 200 OK
+/// content-length: 138
+/// content-type: application/json
+/// date: Sat, 22 Feb 2020 17:02:14 GMT
+///
+/// [
+///   {
+///     "id": 1,
+///     "name": "超级管理员",
+///     "max_user": 1,
+///     "max_permission": null
+///   },
+///   {
+///     "id": 5,
+///     "name": "角色名",
+///     "max_user": 121212,
+///     "max_permission": null
+///   }
+/// ]
+/// ```
 async fn list_roles(
     role_svc: web::Data<RoleService>,
     pager: Path<Pager>,
