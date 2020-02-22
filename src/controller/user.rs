@@ -92,9 +92,11 @@ async fn sign_in(
     let username = Username::new(&sign_in_params.identity)?;
 
     let user_info = match sign_in_params.auth_type {
-        AuthType::Username => user_svc
-            .sign_in_with_username(&username, &sign_in_params.credential1)
-            .await?,
+        AuthType::Username => {
+            user_svc
+                .sign_in_with_username(&username, &sign_in_params.credential1)
+                .await?
+        }
         AuthType::Phone => {
             let phone = Phone::new(&sign_in_params.identity)?;
             let auth_code = AuthCode::new(&sign_in_params.credential1)?;
