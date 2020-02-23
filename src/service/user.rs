@@ -145,20 +145,23 @@ impl UserService {
         }
     }
 
-    pub async fn query_user_roles(&self, user_id: Id) -> Result<Vec<Id>, Error> {
+    pub async fn query_user_roles(&self, user_id: Id) -> Result<Vec<Role>, Error> {
         let pg = self.pg_pool.get().await?;
 
         let rows = pg
-            .query("select * from user_role where user_id = $1", &[&user_id])
+            .query(
+                "select * from role where id in (select role_id from user_role where user_id = $1)",
+                &[&user_id],
+            )
             .await?;
 
-        let mut user_roles = Vec::with_capacity(rows.len());
+        let mut roles = Vec::with_capacity(rows.len());
 
         for row in rows.iter() {
-            user_roles.push(UserRole::from_row_ref(row)?.role_id);
+            roles.push(Role::from_row_ref(row)?);
         }
 
-        Ok(user_roles)
+        Ok(roles)
     }
 
     pub async fn query_user_auth(&self, user_id: Id) -> Result<Vec<UserAuth>, Error> {
@@ -177,6 +180,7 @@ impl UserService {
         Ok(auth)
     }
 
+    // TODO: 应该返回 `Vec<Permission>`，待修改
     pub async fn query_user_perm(&self, user_id: Id) -> Result<Vec<RolePermission>, Error> {
         let pg = self.pg_pool.get().await?;
 

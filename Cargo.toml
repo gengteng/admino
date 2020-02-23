@@ -1,13 +1,13 @@
 [package]
 name = "admino"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["gengteng <me@gteng.org>"]
 description = "Yet another actix-based admin system"
 license = "MIT"
 homepage = "https://github.com/gengteng/admino"
 repository = "https://github.com/gengteng/admino"
 documentation = "https://github.com/gengteng/admino"
-keywords = [ "admin", "actix", "RBAC" ]
+keywords = [ "admin", "actix", "postgres", "redis", "RBAC" ]
 readme = "README.md"
 edition = "2018"
 

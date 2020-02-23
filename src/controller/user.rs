@@ -1,9 +1,11 @@
 //! 用户及登录相关控制器
 //!
+//! TODO: 待拆分成用户的增删改查、用户注册登录登出和验证码相关两部分（或三部分？）
 use super::IntoJsonResult;
+use crate::controller::EmptyBody;
 use crate::error::{Error, Kind};
 use crate::model::{
-    AuthType, GetAuthCodeParams, Id, RegisterParams, RolePermission, SignInParams, UserAuth,
+    AuthType, GetAuthCodeParams, RegisterParams, Role, RolePermission, SignInParams, UserAuth,
     UserInfo,
 };
 use crate::service::user::UserService;
@@ -22,47 +24,111 @@ pub fn get_user_scope() -> Scope {
         .service(web::resource("/signOut").route(web::post().to(sign_out)))
         .service(web::resource("/info").route(web::get().to(get_user_info)))
         .service(web::resource("/roles").route(web::get().to(get_user_role)))
-        .service(web::resource("/permissions").route(web::get().to(get_user_perm)))
         .service(web::resource("/authentications").route(web::get().to(get_user_auth)))
+        .service(web::resource("/permissions").route(web::get().to(get_user_perm)))
 }
 
 /// 发送6位数字验证码到手机号
+///
+/// ## Example
+///
+/// HTTP 请求:
+/// ```
+/// POST /user/phoneAuthCode
+/// ```
+///
+/// HTTP 响应:
+/// ```
+/// HTTP/1.1 200 OK
+/// content-length: 0
+/// content-type: text/plain; charset=utf-8
+/// date: Sat, 22 Feb 2020 12:32:15 GMT
+///
+/// <Response body is empty>
+/// ```
 async fn send_auth_code_to_phone(
     get_auth_param: Json<GetAuthCodeParams>,
     user_svc: web::Data<UserService>,
-) -> Result<Json<AuthCode>, Error> {
+) -> Result<&'static str, Error> {
     let phone = Phone::new(&get_auth_param.identity)?;
 
     let auth_code = AuthCode::default();
 
     // TODO: send auth code to phone
+    info!("已给手机号 {} 发送数字验证码 {}", phone, auth_code);
 
     user_svc
         .cache_auth_code(AuthType::Phone, &phone, &auth_code)
-        .await?;
-
-    Ok(Json(auth_code)) // TODO: just send ok
+        .await
+        .empty_body()
 }
 
 /// 发送6位数字验证码到邮箱
+///
+/// ## Example
+///
+/// HTTP 请求:
+/// ```
+/// POST /user/emailAuthCode
+/// ```
+///
+/// HTTP 响应:
+/// ```
+/// HTTP/1.1 200 OK
+/// content-length: 0
+/// content-type: text/plain; charset=utf-8
+/// date: Sat, 22 Feb 2020 12:32:15 GMT
+///
+/// <Response body is empty>
+/// ```
 async fn send_auth_code_to_email(
     get_auth_param: Json<GetAuthCodeParams>,
     user_svc: web::Data<UserService>,
-) -> Result<Json<AuthCode>, Error> {
+) -> Result<&'static str, Error> {
     let email = Email::new(&get_auth_param.identity)?;
 
     let auth_code = AuthCode::default();
 
     // TODO: send auth code to email address
+    info!("已给电子邮箱 {} 发送数字验证码 {}", email, auth_code);
 
     user_svc
         .cache_auth_code(AuthType::Email, &email, &auth_code)
-        .await?;
-
-    Ok(Json(auth_code)) // TODO: just send ok
+        .await
+        .empty_body()
 }
 
 /// 使用手机号注册
+///
+/// ## Example
+///
+/// HTTP 请求:
+/// ```
+/// POST /user/register
+/// Content-Type: application/json
+///
+/// {"username": "gengteng", "nickname": "GT", "phone": "+8615120049138", "auth_code": "165908"}
+/// ```
+///
+/// HTTP 响应:
+/// ```
+/// HTTP/1.1 200 OK
+/// content-length: 197
+/// content-type: application/json
+/// date: Sun, 23 Feb 2020 13:23:56 GMT
+///
+/// {
+///   "id": 5,
+///   "username": "gengteng",
+///   "nickname": "GT",
+///   "avatar": null,
+///   "gender": "Unknown",
+///   "birthday": null,
+///   "create_time": "2020-02-23T13:23:57.305393",
+///   "update_time": "2020-02-23T13:23:57.305393",
+///   "max_role": null
+/// }
+/// ```
 async fn register_with_phone(
     reg_param: Json<RegisterParams>,
     user_svc: web::Data<UserService>,
@@ -87,6 +153,38 @@ async fn register_with_phone(
 }
 
 /// 登录
+///
+/// ## Example
+///
+/// HTTP 请求:
+/// ```
+/// POST /user/signIn
+/// Content-Type: application/json
+///
+/// {"identity": "+8615120049138","auth_type": "Phone","credential1": "490604"}
+/// ```
+///
+/// HTTP 响应:
+/// ```
+/// HTTP/1.1 200 OK
+/// content-length: 197
+/// content-type: application/json
+/// set-cookie: identity=XtltrLDnewNbRrCBFYd5ZVDdeu3+kNwf/L28W28tsdY=D6lDb0WskxWKSHUczlNJHo3aUi4QEy8n; HttpOnly; Max-Age=86400
+/// date: Sun, 23 Feb 2020 13:27:25 GMT
+///
+/// {
+///   "id": 5,
+///   "username": "gengteng",
+///   "nickname": "GT",
+///   "avatar": null,
+///   "gender": "Unknown",
+///   "birthday": null,
+///   "create_time": "2020-02-23T13:23:57.305393",
+///   "update_time": "2020-02-23T13:23:57.305393",
+///   "max_role": null
+/// }
+/// ```
+///
 async fn sign_in(
     sign_in_params: Json<SignInParams>,
     identity: Identity,
@@ -117,6 +215,25 @@ async fn sign_in(
 }
 
 /// 登出
+///
+/// ## Example
+///
+/// HTTP 请求:
+/// ```
+/// POST /user/signOut
+/// ```
+///
+/// HTTP 响应:
+/// ```
+/// HTTP/1.1 200 OK
+/// content-length: 0
+/// content-type: text/plain; charset=utf-8
+/// set-cookie: identity=; Max-Age=0; Expires=Sat, 23 Feb 2019 13:30:39 GMT
+/// date: Sun, 23 Feb 2020 13:30:39 GMT
+///
+/// <Response body is empty>
+/// ```
+///
 async fn sign_out(identity: Identity) -> Result<&'static str, Error> {
     if identity.is_user() {
         identity.sign_out();
@@ -127,6 +244,33 @@ async fn sign_out(identity: Identity) -> Result<&'static str, Error> {
 }
 
 /// 获取当前用户信息
+///
+/// # Example
+///
+/// HTTP 请求:
+/// ```
+/// GET /user/info
+/// ```
+///
+/// HTTP 响应:
+/// ```
+/// HTTP/1.1 200 OK
+/// content-length: 197
+/// content-type: application/json
+/// date: Sun, 23 Feb 2020 13:44:30 GMT
+///
+/// {
+///   "id": 5,
+///   "username": "gengteng",
+///   "nickname": "GT",
+///   "avatar": null,
+///   "gender": "Unknown",
+///   "birthday": null,
+///   "create_time": "2020-02-23T13:23:57.305393",
+///   "update_time": "2020-02-23T13:23:57.305393",
+///   "max_role": null
+/// }
+/// ```
 async fn get_user_info(
     identity: Identity,
     user_svc: web::Data<UserService>,
@@ -138,11 +282,41 @@ async fn get_user_info(
     }
 }
 
-/// 获取当前用户的所有角色Id
+/// 获取当前用户的所有角色
+///
+/// # Example
+///
+/// HTTP 请求:
+/// ```
+/// GET /user/roles
+/// ```
+///
+/// HTTP 响应:
+/// ```
+/// HTTP/1.1 200 OK
+/// content-length: 138
+/// content-type: application/json
+/// date: Sun, 23 Feb 2020 13:48:07 GMT
+///
+/// [
+///   {
+///     "id": 1,
+///     "name": "超级管理员",
+///     "max_user": 1,
+///     "max_permission": null
+///   },
+///   {
+///     "id": 5,
+///     "name": "角色名",
+///     "max_user": 121212,
+///     "max_permission": null
+///   }
+/// ]
+/// ```
 async fn get_user_role(
     identity: Identity,
     user_svc: web::Data<UserService>,
-) -> Result<Json<Vec<Id>>, Error> {
+) -> Result<Json<Vec<Role>>, Error> {
     if let Some(user_id) = identity.get() {
         user_svc.query_user_roles(user_id).await.json()
     } else {
@@ -151,6 +325,33 @@ async fn get_user_role(
 }
 
 /// 获取当前用户所有登录方式
+///
+/// # Example
+///
+/// HTTP 请求:
+/// ```
+/// GET /user/authentications
+/// ```
+///
+/// HTTP 响应:
+/// ```
+/// HTTP/1.1 200 OK
+/// content-length: 185
+/// content-type: application/json
+/// date: Sun, 23 Feb 2020 13:48:50 GMT
+///
+/// [
+///   {
+///     "user_id": 5,
+///     "auth_type": "Phone",
+///     "identity": "+8615120049138",
+///     "credential1": "",
+///     "credential2": null,
+///     "create_time": "2020-02-23T13:23:57.305393",
+///     "update_time": "2020-02-23T13:23:57.305393"
+///   }
+/// ]
+/// ```
 async fn get_user_auth(
     identity: Identity,
     user_svc: web::Data<UserService>,
@@ -163,6 +364,8 @@ async fn get_user_auth(
 }
 
 /// 获取用户所有权限
+///
+/// TODO: 应该返回 `Vec<Permission>`，待修改
 async fn get_user_perm(
     identity: Identity,
     user_svc: web::Data<UserService>,

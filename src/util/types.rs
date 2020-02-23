@@ -71,6 +71,12 @@ impl AuthCode {
     }
 }
 
+impl fmt::Display for AuthCode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.code.fmt(f)
+    }
+}
+
 /// 手机号
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Phone(PhoneNumber);
@@ -98,7 +104,7 @@ impl Phone {
 
 impl fmt::Display for Phone {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.to_e164())
+        self.to_e164().fmt(f)
     }
 }
 
@@ -169,7 +175,7 @@ impl Email {
 
 impl fmt::Display for Email {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.0)
+        self.0.fmt(f)
     }
 }
 
@@ -232,7 +238,7 @@ impl Username {
 
 impl fmt::Display for Username {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.0)
+        self.0.fmt(f)
     }
 }
 
