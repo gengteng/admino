@@ -12,6 +12,7 @@ use crate::util::types::{AuthCode, Email, Phone, Username};
 use actix_web::web::Json;
 use actix_web::{web, Scope};
 
+/// 获取用户及登录相关的所有路由
 pub fn get_user_scope() -> Scope {
     web::scope("/user")
         .service(web::resource("/phoneAuthCode").route(web::post().to(send_auth_code_to_phone)))
@@ -25,6 +26,7 @@ pub fn get_user_scope() -> Scope {
         .service(web::resource("/authentications").route(web::get().to(get_user_auth)))
 }
 
+/// 发送6位数字验证码到手机号
 async fn send_auth_code_to_phone(
     get_auth_param: Json<GetAuthCodeParams>,
     user_svc: web::Data<UserService>,
@@ -42,6 +44,7 @@ async fn send_auth_code_to_phone(
     Ok(Json(auth_code)) // TODO: just send ok
 }
 
+/// 发送6位数字验证码到邮箱
 async fn send_auth_code_to_email(
     get_auth_param: Json<GetAuthCodeParams>,
     user_svc: web::Data<UserService>,
@@ -59,6 +62,7 @@ async fn send_auth_code_to_email(
     Ok(Json(auth_code)) // TODO: just send ok
 }
 
+/// 使用手机号注册
 async fn register_with_phone(
     reg_param: Json<RegisterParams>,
     user_svc: web::Data<UserService>,
@@ -82,6 +86,7 @@ async fn register_with_phone(
         .json()
 }
 
+/// 登录
 async fn sign_in(
     sign_in_params: Json<SignInParams>,
     identity: Identity,
@@ -111,6 +116,7 @@ async fn sign_in(
     Ok(Json(user_info))
 }
 
+/// 登出
 async fn sign_out(identity: Identity) -> Result<&'static str, Error> {
     if identity.is_user() {
         identity.sign_out();
@@ -120,6 +126,7 @@ async fn sign_out(identity: Identity) -> Result<&'static str, Error> {
     }
 }
 
+/// 获取当前用户信息
 async fn get_user_info(
     identity: Identity,
     user_svc: web::Data<UserService>,
@@ -131,6 +138,7 @@ async fn get_user_info(
     }
 }
 
+/// 获取当前用户的所有角色Id
 async fn get_user_role(
     identity: Identity,
     user_svc: web::Data<UserService>,
@@ -142,6 +150,7 @@ async fn get_user_role(
     }
 }
 
+/// 获取当前用户所有登录方式
 async fn get_user_auth(
     identity: Identity,
     user_svc: web::Data<UserService>,
@@ -153,6 +162,7 @@ async fn get_user_auth(
     }
 }
 
+/// 获取用户所有权限
 async fn get_user_perm(
     identity: Identity,
     user_svc: web::Data<UserService>,

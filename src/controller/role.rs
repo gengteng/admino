@@ -153,7 +153,7 @@ async fn retrieve_role(
 ///
 /// HTTP 请求:
 /// ```
-/// PATCH http://localhost:30000/role/6
+/// PATCH /role/6
 /// Content-Type: application/json
 ///
 /// {"id": 6, "name": "角色名1", "max_user": 100, "max_permission": 200}
@@ -185,7 +185,7 @@ async fn update_role(
 ///
 /// HTTP 请求:
 /// ```
-/// DELETE http://localhost:30000/role/6
+/// DELETE /role/6
 /// ```
 ///
 /// HTTP 响应:

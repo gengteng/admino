@@ -47,7 +47,7 @@ impl From<tokio_postgres::Error> for Error {
             if let Some(e) = e.downcast_ref::<tokio_postgres::error::DbError>() {
                 if let Some(constraint) = e.constraint() {
                     // 违反了 unique 约束，表示是这个错误： DUPLICATE_VALUE
-                    if let Some(_) = constraint.find("unique") {
+                    if constraint.find("unique").is_some() {
                         return Kind::DUPLICATE_VALUE.into();
                     }
                 }
