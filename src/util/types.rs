@@ -1,3 +1,4 @@
+//! 各种工具类型
 use crate::error::{Error, Exception, Kind};
 use phonenumber::{Mode, PhoneNumber};
 use postgres_types::private::BytesMut;
@@ -89,7 +90,7 @@ impl Phone {
     pub fn new(src: &str) -> Result<Self, Error> {
         Self::from_str(src)
     }
-
+    /// 转换为 E.164 格式的字符串
     pub fn to_e164(&self) -> String {
         self.0.format().mode(Mode::E164).to_string()
     }
@@ -144,7 +145,7 @@ impl Serialize for Phone {
 
 impl_de!(Phone);
 
-/// Email
+/// Email 地址
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Email(String);
 

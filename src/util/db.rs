@@ -1,3 +1,4 @@
+//! 数据库相关工具
 use serde::{Deserialize, Serialize};
 
 /// 分页查询条件

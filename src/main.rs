@@ -1,3 +1,6 @@
+//! Admino 是一个计划使用 Actix 2.0+ 实现后端，Angular 8+ 实现前端，
+//! PostgreSQL 作为数据库，Redis 作为缓存的后台管理系统。
+//!
 use crate::controller::LoadAllControllers;
 use crate::error::Exception;
 use crate::service::LoadAllServices;
@@ -19,6 +22,15 @@ extern crate derive_more;
 #[macro_use]
 extern crate postgres_types;
 
+/// 入口函数
+///
+/// # 主要流程
+///
+/// 1. 从 config.toml 或 config.json 中读取所有配置(Opts)；
+/// 2. 设置日志级别；
+/// 3. 初始化 PostgreSQL 和 Redis 连接池，并取连接验证；
+/// 4. 设置各种中间件，加载控制器和服务，并启动 HTTP 服务。
+///
 #[actix_rt::main]
 async fn main() -> Result<(), Exception> {
     let Opts {
