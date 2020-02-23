@@ -5,8 +5,7 @@ use crate::error::Error;
 use crate::model::{Count, Id, Permission, PermissionContent};
 use crate::service::permission::PermissionService;
 use crate::util::db::Pager;
-use actix_web::web::Json;
-use actix_web::{web, Scope};
+use actix_web::{web, web::Data, web::Json, web::Path, Scope};
 
 /// 获取所有权限相关的所有路由
 pub fn get_permission_scope() -> Scope {
@@ -42,9 +41,7 @@ pub fn get_permission_scope() -> Scope {
 ///   "count": 2
 /// }
 /// ```
-async fn get_permissions_count(
-    perm_svc: web::Data<PermissionService>,
-) -> Result<Json<Count>, Error> {
+async fn get_permissions_count(perm_svc: Data<PermissionService>) -> Result<Json<Count>, Error> {
     perm_svc.query_permission_count().await.json()
 }
 
@@ -76,8 +73,8 @@ async fn get_permissions_count(
 /// ]
 /// ```
 async fn list_permissions(
-    perm_svc: web::Data<PermissionService>,
-    pager: web::Path<Pager>,
+    perm_svc: Data<PermissionService>,
+    pager: Path<Pager>,
 ) -> Result<Json<Vec<Permission>>, Error> {
     perm_svc.list_permissions(&pager).await.json()
 }
@@ -107,7 +104,7 @@ async fn list_permissions(
 /// }
 /// ```
 async fn create_permission(
-    perm_svc: web::Data<PermissionService>,
+    perm_svc: Data<PermissionService>,
     params: Json<PermissionContent>,
 ) -> Result<Json<Permission>, Error> {
     perm_svc.create_permission(&params).await.json()
@@ -135,8 +132,8 @@ async fn create_permission(
 /// }
 /// ```
 async fn retrieve_permission(
-    perm_svc: web::Data<PermissionService>,
-    id: web::Path<Id>,
+    perm_svc: Data<PermissionService>,
+    id: Path<Id>,
 ) -> Result<Json<Permission>, Error> {
     perm_svc.query_permission(id.into_inner()).await.json()
 }
@@ -163,9 +160,9 @@ async fn retrieve_permission(
 /// <Response body is empty>
 /// ```
 async fn update_permission(
-    perm_svc: web::Data<PermissionService>,
-    id: web::Path<Id>,
-    perm: web::Json<Permission>,
+    perm_svc: Data<PermissionService>,
+    id: Path<Id>,
+    perm: Json<Permission>,
 ) -> Result<&'static str, Error> {
     perm_svc
         .update_permission(id.into_inner(), &perm)
@@ -192,8 +189,8 @@ async fn update_permission(
 /// <Response body is empty>
 /// ```
 async fn delete_permission(
-    perm_svc: web::Data<PermissionService>,
-    id: web::Path<Id>,
+    perm_svc: Data<PermissionService>,
+    id: Path<Id>,
 ) -> Result<&'static str, Error> {
     perm_svc
         .delete_permission(id.into_inner())

@@ -6,7 +6,7 @@ use crate::error::Error;
 use crate::model::{Count, Id, Role, RoleContent};
 use crate::service::role::RoleService;
 use crate::util::db::Pager;
-use actix_web::{web, web::Json, web::Path, Scope};
+use actix_web::{web, web::Data, web::Json, web::Path, Scope};
 
 /// 获取角色相关的所有路由
 pub fn get_role_scope() -> Scope {
@@ -42,7 +42,7 @@ pub fn get_role_scope() -> Scope {
 ///   "count": 2
 /// }
 /// ```
-async fn get_roles_count(role_svc: web::Data<RoleService>) -> Result<Json<Count>, Error> {
+async fn get_roles_count(role_svc: Data<RoleService>) -> Result<Json<Count>, Error> {
     role_svc.query_roles_count().await.json()
 }
 
@@ -78,7 +78,7 @@ async fn get_roles_count(role_svc: web::Data<RoleService>) -> Result<Json<Count>
 /// ]
 /// ```
 async fn list_roles(
-    role_svc: web::Data<RoleService>,
+    role_svc: Data<RoleService>,
     pager: Path<Pager>,
 ) -> Result<Json<Vec<Role>>, Error> {
     role_svc.list_roles(&pager).await.json()
@@ -111,7 +111,7 @@ async fn list_roles(
 /// }
 /// ```
 async fn create_role(
-    role_svc: web::Data<RoleService>,
+    role_svc: Data<RoleService>,
     params: Json<RoleContent>,
 ) -> Result<Json<Role>, Error> {
     role_svc.create_role(&params).await.json()
@@ -141,7 +141,7 @@ async fn create_role(
 /// }
 /// ```
 async fn retrieve_role(
-    role_svc: web::Data<RoleService>,
+    role_svc: Data<RoleService>,
     id: web::Path<Id>,
 ) -> Result<Json<Role>, Error> {
     role_svc.query_role(id.into_inner()).await.json()
@@ -169,7 +169,7 @@ async fn retrieve_role(
 /// <Response body is empty>
 /// ```
 async fn update_role(
-    role_svc: web::Data<RoleService>,
+    role_svc: Data<RoleService>,
     id: web::Path<Id>,
     role: web::Json<Role>,
 ) -> Result<&'static str, Error> {
@@ -198,7 +198,7 @@ async fn update_role(
 /// <Response body is empty>
 /// ```
 async fn delete_role(
-    role_svc: web::Data<RoleService>,
+    role_svc: Data<RoleService>,
     id: web::Path<Id>,
 ) -> Result<&'static str, Error> {
     role_svc.delete_role(id.into_inner()).await.empty_body()
