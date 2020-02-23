@@ -4,7 +4,6 @@ use crate::model::*;
 use crate::opt::{PgPool, RedisPool};
 use crate::util::types::{AuthCode, Phone, Username};
 use deadpool_redis::cmd;
-use log::*;
 use std::fmt::Display;
 use tokio_pg_mapper::FromTokioPostgresRow;
 

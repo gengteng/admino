@@ -22,6 +22,9 @@ extern crate derive_more;
 #[macro_use]
 extern crate postgres_types;
 
+#[macro_use]
+extern crate log;
+
 /// 入口函数
 ///
 /// # 主要流程
