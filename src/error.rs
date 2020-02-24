@@ -155,23 +155,26 @@ impl Kind {
     /// 用户名格式错误(3)
     pub const INVALID_USERNAME: &'static Kind =
         &Kind::new(3, "用户名格式错误", StatusCode::BAD_REQUEST);
-    /// 手机号格式错误(4)
+    /// 密码格式错误(4)
+    pub const INVALID_PASSWORD: &'static Kind =
+        &Kind::new(4, "密码格式错误", StatusCode::BAD_REQUEST);
+    /// 手机号格式错误(5)
     pub const INVALID_PHONE_NUMBER: &'static Kind =
-        &Kind::new(4, "手机号格式错误", StatusCode::BAD_REQUEST);
-    /// 电子邮件格式错误(5)
+        &Kind::new(5, "手机号格式错误", StatusCode::BAD_REQUEST);
+    /// 电子邮件格式错误(6)
     pub const INVALID_EMAIL: &'static Kind =
-        &Kind::new(5, "电子邮件格式错误", StatusCode::BAD_REQUEST);
-    /// 登录失败(6)
-    pub const LOGIN_FAILED: &'static Kind = &Kind::new(6, "登录失败", StatusCode::UNAUTHORIZED);
-    /// 验证码错误(7)
+        &Kind::new(6, "电子邮件格式错误", StatusCode::BAD_REQUEST);
+    /// 登录失败(7)
+    pub const LOGIN_FAILED: &'static Kind = &Kind::new(7, "登录失败", StatusCode::UNAUTHORIZED);
+    /// 验证码错误(8)
     pub const INVALID_AUTH_CODE: &'static Kind =
-        &Kind::new(7, "验证码错误", StatusCode::BAD_REQUEST);
-    /// 违反唯一性约束(8)
+        &Kind::new(8, "验证码错误", StatusCode::BAD_REQUEST);
+    /// 违反唯一性约束(9)
     pub const DUPLICATE_VALUE: &'static Kind =
-        &Kind::new(8, "违反唯一性约束", StatusCode::BAD_REQUEST);
-    /// 请求的资源不存在(9)
+        &Kind::new(9, "违反唯一性约束", StatusCode::BAD_REQUEST);
+    /// 请求的资源不存在(10)
     pub const EMPTY_RESULT: &'static Kind =
-        &Kind::new(8, "请求的资源不存在", StatusCode::NOT_FOUND);
+        &Kind::new(10, "请求的资源不存在", StatusCode::NOT_FOUND);
 
     /// 未知服务器错误(-1)
     pub const UNKNOWN: &'static Kind =
@@ -194,6 +197,12 @@ impl Kind {
     /// 缓存连接池错误(-7)
     pub const CACHE_POOL_ERROR: &'static Kind =
         &Kind::new(-7, "缓存连接池错误", StatusCode::INTERNAL_SERVER_ERROR);
+    /// 加解密错误(-8)
+    pub const CRYPTO_ERROR: &'static Kind =
+        &Kind::new(-8, "加解密错误", StatusCode::INTERNAL_SERVER_ERROR);
+    /// 工作线程错误(-9)
+    pub const WORKER_THREAD_ERROR: &'static Kind =
+        &Kind::new(-9, "工作线程错误", StatusCode::INTERNAL_SERVER_ERROR);
 }
 
 impl StdError for Error {}

@@ -76,3 +76,8 @@ pub struct RegisterParams {
 pub struct GetAuthCodeParams {
     pub identity: String,
 }
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+pub struct AddPasswordParams {
+    pub password: String,
+}

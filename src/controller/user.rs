@@ -5,12 +5,12 @@ use super::IntoJsonResult;
 use crate::controller::EmptyBody;
 use crate::error::{Error, Kind};
 use crate::model::{
-    AuthType, GetAuthCodeParams, RegisterParams, Role, RolePermission, SignInParams, UserAuth,
-    UserInfo,
+    AddPasswordParams, AuthType, GetAuthCodeParams, RegisterParams, Role, RolePermission,
+    SignInParams, UserAuth, UserInfo,
 };
 use crate::service::user::UserService;
-use crate::util::identity::Identity;
 use crate::util::types::{AuthCode, Email, Phone, Username};
+use crate::util::user::User;
 use actix_web::web::Json;
 use actix_web::{web, Scope};
 
@@ -23,6 +23,7 @@ pub fn get_user_scope() -> Scope {
         .service(web::resource("/signIn").route(web::post().to(sign_in)))
         .service(web::resource("/signOut").route(web::post().to(sign_out)))
         .service(web::resource("/info").route(web::get().to(get_user_info)))
+        .service(web::resource("/addPassword").route(web::post().to(add_password)))
         .service(web::resource("/roles").route(web::get().to(get_user_role)))
         .service(web::resource("/authentications").route(web::get().to(get_user_auth)))
         .service(web::resource("/permissions").route(web::get().to(get_user_perm)))
@@ -187,29 +188,34 @@ async fn register_with_phone(
 ///
 async fn sign_in(
     sign_in_params: Json<SignInParams>,
-    identity: Identity,
+    user: User,
     user_svc: web::Data<UserService>,
 ) -> Result<Json<UserInfo>, Error> {
-    let sign_in_params = sign_in_params.into_inner();
+    let SignInParams {
+        auth_type,
+        identity,
+        credential1,
+        ..
+    } = sign_in_params.into_inner();
 
-    let username = Username::new(&sign_in_params.identity)?;
+    let username = Username::new(&identity)?;
 
-    let user_info = match sign_in_params.auth_type {
+    let user_info = match auth_type {
         AuthType::Username => {
             user_svc
-                .sign_in_with_username(&username, &sign_in_params.credential1)
+                .sign_in_with_username(username, credential1)
                 .await?
         }
         AuthType::Phone => {
-            let phone = Phone::new(&sign_in_params.identity)?;
-            let auth_code = AuthCode::new(&sign_in_params.credential1)?;
+            let phone = Phone::new(&identity)?;
+            let auth_code = AuthCode::new(&credential1)?;
 
             user_svc.sign_in_with_phone(&phone, &auth_code).await?
         }
         AuthType::Email => unimplemented!(),
     };
 
-    identity.sign_in(user_info.id)?;
+    user.sign_in(user_info.id)?;
 
     Ok(Json(user_info))
 }
@@ -234,9 +240,9 @@ async fn sign_in(
 /// <Response body is empty>
 /// ```
 ///
-async fn sign_out(identity: Identity) -> Result<&'static str, Error> {
-    if identity.is_user() {
-        identity.sign_out();
+async fn sign_out(user: User) -> Result<&'static str, Error> {
+    if user.is_user() {
+        user.sign_out();
         Ok("")
     } else {
         Err(Kind::USER_NOT_SIGNED_IN.into())
@@ -272,11 +278,49 @@ async fn sign_out(identity: Identity) -> Result<&'static str, Error> {
 /// }
 /// ```
 async fn get_user_info(
-    identity: Identity,
+    user: User,
     user_svc: web::Data<UserService>,
 ) -> Result<Json<UserInfo>, Error> {
-    if let Some(user_id) = identity.get() {
+    if let Some(user_id) = user.get() {
         user_svc.query_user_by_id(user_id).await.json()
+    } else {
+        Err(Kind::USER_NOT_SIGNED_IN.into())
+    }
+}
+
+/// 为当前用户新增登录密码
+///
+/// ## Example
+///
+/// HTTP 请求:
+/// ```
+/// POST /user/addPassword
+/// Content-Type: application/json
+///
+/// {"password": "!23QweAsd"}
+/// ```
+///
+/// HTTP 响应:
+/// ```
+/// HTTP/1.1 200 OK
+/// content-length: 0
+/// content-type: text/plain; charset=utf-8
+/// set-cookie: identity=; Max-Age=0; Expires=Sat, 23 Feb 2019 13:30:39 GMT
+/// date: Sun, 23 Feb 2020 13:30:39 GMT
+///
+/// <Response body is empty>
+/// ```
+///
+async fn add_password(
+    add_pwd_params: Json<AddPasswordParams>,
+    user: User,
+    user_svc: web::Data<UserService>,
+) -> Result<&'static str, Error> {
+    if let Some(user_id) = user.get() {
+        user_svc
+            .add_password(user_id, add_pwd_params.into_inner().password)
+            .await
+            .empty_body()
     } else {
         Err(Kind::USER_NOT_SIGNED_IN.into())
     }
@@ -314,10 +358,10 @@ async fn get_user_info(
 /// ]
 /// ```
 async fn get_user_role(
-    identity: Identity,
+    user: User,
     user_svc: web::Data<UserService>,
 ) -> Result<Json<Vec<Role>>, Error> {
-    if let Some(user_id) = identity.get() {
+    if let Some(user_id) = user.get() {
         user_svc.query_user_roles(user_id).await.json()
     } else {
         Err(Kind::USER_NOT_SIGNED_IN.into())
@@ -353,10 +397,10 @@ async fn get_user_role(
 /// ]
 /// ```
 async fn get_user_auth(
-    identity: Identity,
+    user: User,
     user_svc: web::Data<UserService>,
 ) -> Result<Json<Vec<UserAuth>>, Error> {
-    if let Some(user_id) = identity.get() {
+    if let Some(user_id) = user.get() {
         user_svc.query_user_auth(user_id).await.json()
     } else {
         Err(Kind::USER_NOT_SIGNED_IN.into())
@@ -367,10 +411,10 @@ async fn get_user_auth(
 ///
 /// TODO: 应该返回 `Vec<Permission>`，待修改
 async fn get_user_perm(
-    identity: Identity,
+    user: User,
     user_svc: web::Data<UserService>,
 ) -> Result<Json<Vec<RolePermission>>, Error> {
-    if let Some(user_id) = identity.get() {
+    if let Some(user_id) = user.get() {
         user_svc.query_user_perm(user_id).await.json()
     } else {
         Err(Kind::USER_NOT_SIGNED_IN.into())

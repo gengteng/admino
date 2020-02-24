@@ -23,21 +23,21 @@ use std::rc::Rc;
 use time::Duration;
 
 /// 自定义的身份标识
-pub struct Identity(HttpRequest);
+pub struct User(HttpRequest);
 
 // 实现了 `FromRequest` 就可以出现在 router 函数的参数列表中
-impl FromRequest for Identity {
+impl FromRequest for User {
     type Error = ActixError;
-    type Future = future::Ready<Result<Identity, ActixError>>;
+    type Future = future::Ready<Result<User, ActixError>>;
     type Config = ();
 
     #[inline]
     fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
-        future::ok(Identity(req.clone()))
+        future::ok(User(req.clone()))
     }
 }
 
-impl Identity {
+impl User {
     const DEFAULT_DURATION_SEC: i64 = 24 * 3600;
 
     pub fn default_ttl() -> Duration {
@@ -48,10 +48,10 @@ impl Identity {
     ///
     /// TODO: Deserialize<'de> 玩不转，只能用 DeserializeOwned，是跟 extensions() 返回值的生命周期有关，还是我用法不对
     pub fn get<T: Serialize + DeserializeOwned>(&self) -> Option<T> {
-        if let Some(cache) = self.0.extensions().get::<IdentityCache>() {
+        if let Some(cache) = self.0.extensions().get::<UserCache>() {
             match cache {
-                IdentityCache::User { identity, .. } => serde_json::from_str(identity).ok(),
-                IdentityCache::Guest { .. } => None,
+                UserCache::User { identity, .. } => serde_json::from_str(identity).ok(),
+                UserCache::Guest { .. } => None,
             }
         } else {
             None
@@ -60,10 +60,10 @@ impl Identity {
 
     /// 判断当前用户是否已登录
     pub fn is_user(&self) -> bool {
-        if let Some(cache) = self.0.extensions().get::<IdentityCache>() {
+        if let Some(cache) = self.0.extensions().get::<UserCache>() {
             match cache {
-                IdentityCache::User { .. } => true,
-                IdentityCache::Guest { .. } => false,
+                UserCache::User { .. } => true,
+                UserCache::Guest { .. } => false,
             }
         } else {
             false
@@ -77,7 +77,7 @@ impl Identity {
         id: T,
         ttl: Duration,
     ) -> Result<(), serde_json::Error> {
-        self.0.extensions_mut().insert(IdentityCache::Guest {
+        self.0.extensions_mut().insert(UserCache::Guest {
             action: Some(SignIn {
                 identity: serde_json::to_string(&id)?,
                 ttl: Some(ttl),
@@ -89,7 +89,7 @@ impl Identity {
 
     /// 登录
     pub fn sign_in<T: Serialize + DeserializeOwned>(&self, id: T) -> Result<(), Error> {
-        self.0.extensions_mut().insert(IdentityCache::Guest {
+        self.0.extensions_mut().insert(UserCache::Guest {
             action: Some(SignIn {
                 identity: serde_json::to_string(&id)
                     .map_err(|e| Kind::DATA_FORMAT.with_detail(e))?,
@@ -102,8 +102,8 @@ impl Identity {
 
     /// 登出
     pub fn sign_out(&self) {
-        if let Some(cache) = self.0.extensions_mut().get_mut::<IdentityCache>() {
-            if let IdentityCache::User { action, .. } = cache {
+        if let Some(cache) = self.0.extensions_mut().get_mut::<UserCache>() {
+            if let UserCache::User { action, .. } = cache {
                 action.replace(SignOut);
             }
         }
@@ -111,7 +111,7 @@ impl Identity {
 }
 
 /// 缓存当前身份标识及下一步操作，放在 HttpRequest 的 Extension 中
-enum IdentityCache {
+enum UserCache {
     User {
         identity: String,
         action: Option<SignOut>,
@@ -130,7 +130,7 @@ struct SignIn {
 /// 登出
 struct SignOut;
 
-struct IdentityInner {
+struct UserInner {
     key: Key,
     secure: bool,
     name: String,
@@ -138,45 +138,45 @@ struct IdentityInner {
 }
 
 /// 身份标识中间件工厂
-pub struct IdentityFactory {
-    inner: Rc<IdentityInner>,
+pub struct UserFactory {
+    inner: Rc<UserInner>,
     pool: RedisPool,
 }
 
-impl IdentityFactory {
+impl UserFactory {
     /// 使用 Redis 线程池创建一个身份标识中间件工厂
     pub fn new(key: &[u8], redis_pool: RedisPool) -> Self {
         let key: Vec<u8> = key.iter().chain([1, 0, 0, 0].iter()).cloned().collect();
         Self {
-            inner: Rc::new(IdentityInner {
+            inner: Rc::new(UserInner {
                 key: Key::from_master(&key),
                 secure: false,
-                name: "identity-cookie".into(),
-                default_ttl: Identity::default_ttl(),
+                name: "user-cookie".into(),
+                default_ttl: User::default_ttl(),
             }),
             pool: redis_pool,
         }
     }
 
-    pub fn name<T: Into<String>>(mut self, value: T) -> IdentityFactory {
+    pub fn name<T: Into<String>>(mut self, value: T) -> UserFactory {
         Rc::get_mut(&mut self.inner).unwrap().name = value.into();
         self
     }
 
     #[allow(dead_code)]
-    pub fn default_ttl(mut self, ttl: Duration) -> IdentityFactory {
+    pub fn default_ttl(mut self, ttl: Duration) -> UserFactory {
         Rc::get_mut(&mut self.inner).unwrap().default_ttl = ttl;
         self
     }
 
     #[allow(dead_code)]
-    pub fn secure(mut self, secure: bool) -> IdentityFactory {
+    pub fn secure(mut self, secure: bool) -> UserFactory {
         Rc::get_mut(&mut self.inner).unwrap().secure = secure;
         self
     }
 }
 
-impl<S, B> Transform<S> for IdentityFactory
+impl<S, B> Transform<S> for UserFactory
 where
     S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = ActixError>
         + 'static,
@@ -186,12 +186,12 @@ where
     type Request = ServiceRequest;
     type Response = ServiceResponse<B>;
     type Error = ActixError;
-    type Transform = IdentityMiddleware<S>;
+    type Transform = UserMiddleware<S>;
     type InitError = ();
     type Future = future::Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        future::ok(IdentityMiddleware {
+        future::ok(UserMiddleware {
             service: Rc::new(RefCell::new(service)),
             inner: self.inner.clone(),
             pool: self.pool.clone(),
@@ -210,14 +210,14 @@ fn make_redis_key(token: &str) -> String {
 }
 
 /// 身份标识中间件
-pub struct IdentityMiddleware<S> {
+pub struct UserMiddleware<S> {
     // This is special: We need this to avoid lifetime issues.
     service: Rc<RefCell<S>>,
-    inner: Rc<IdentityInner>,
+    inner: Rc<UserInner>,
     pool: RedisPool,
 }
 
-impl<S, B> Service for IdentityMiddleware<S>
+impl<S, B> Service for UserMiddleware<S>
 where
     S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = ActixError>
         + 'static,
@@ -266,19 +266,19 @@ where
 
                     if let Some(identity) = id {
                         // 如果取成功了，在 HttpRequest 的 extensions 中插入用户身份标识
-                        req.extensions_mut().insert(IdentityCache::User {
+                        req.extensions_mut().insert(UserCache::User {
                             identity,
                             action: None,
                         });
                     } else {
                         // 如果取失败了，证明是游客
                         req.extensions_mut()
-                            .insert(IdentityCache::Guest { action: None });
+                            .insert(UserCache::Guest { action: None });
                     }
                 } else {
                     // 如果 cookie 中没有 key，证明是游客
                     req.extensions_mut()
-                        .insert(IdentityCache::Guest { action: None });
+                        .insert(UserCache::Guest { action: None });
                 }
 
                 // 调用下一个 service，包括 router
@@ -288,9 +288,9 @@ where
                 let key = &inner.key;
 
                 // 根据 extensions 里 IdentityCache 对象的 action 的变化执行登录/登出
-                if let Some(cache) = response.request().extensions().get::<IdentityCache>() {
+                if let Some(cache) = response.request().extensions().get::<UserCache>() {
                     match cache {
-                        IdentityCache::User {
+                        UserCache::User {
                             action: Some(_), ..
                         } => {
                             // 如果是用户且有动作就尝试登出
@@ -313,7 +313,7 @@ where
                             jar.add_original(cookie.clone());
                             jar.signed(key).remove(cookie);
                         }
-                        IdentityCache::Guest { action: Some(si) } => {
+                        UserCache::Guest { action: Some(si) } => {
                             // 如果是游客并且有登陆动作
                             let token: String = iter::repeat(())
                                 .map(|()| OsRng.sample(Alphanumeric))

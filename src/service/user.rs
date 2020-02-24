@@ -2,6 +2,7 @@
 use crate::error::{Error, Kind};
 use crate::model::*;
 use crate::opt::{PgPool, RedisPool};
+use crate::util::crypto::{check_pwd, hash_pwd};
 use crate::util::types::{AuthCode, Phone, Username};
 use deadpool_redis::cmd;
 use std::fmt::Display;
@@ -94,16 +95,51 @@ impl UserService {
         Ok(user_info)
     }
 
+    pub async fn add_password(&self, user_id: Id, password: String) -> Result<(), Error> {
+        let pg = self.pg_pool.get().await?;
+
+        if let Some(row) = pg
+            .query_opt("select username from user_info where id = $1", &[&user_id])
+            .await?
+        {
+            let username: String = row.get(0);
+            let hashed_pwd = hash_pwd(password).await?;
+
+            pg.execute("insert into user_auth(user_id, auth_type, identity, credential1) values($1, $2, $3, $4)",
+                &[&user_id, &AuthType::Username, &username, &hashed_pwd]).await?;
+
+            Ok(())
+        } else {
+            Err(Kind::EMPTY_RESULT.into())
+        }
+    }
+
     pub async fn sign_in_with_username(
         &self,
-        username: &Username,
-        _password: &str,
+        username: Username,
+        password: String,
     ) -> Result<UserInfo, Error> {
         let pg = self.pg_pool.get().await?;
 
         if let Some(row) = pg
-            .query_opt("select * from user_info where id in (select user_id from user_auth where auth_type = $1 and identity = $2)",
-                       &[&AuthType::Username, &username]).await? {
+            .query_opt(
+                "select * from user_auth where auth_type = $1 and identity = $2",
+                &[&AuthType::Username, &username],
+            )
+            .await?
+        {
+            let UserAuth {
+                user_id,
+                credential1: hashed_pwd,
+                ..
+            } = UserAuth::from_row(row)?;
+
+            check_pwd(password, hashed_pwd).await?;
+
+            let row = pg
+                .query_one("select * from user_info where id = $1", &[&user_id])
+                .await?;
+
             Ok(UserInfo::from_row(row)?)
         } else {
             Err(Kind::LOGIN_FAILED.into())

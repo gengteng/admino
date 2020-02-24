@@ -33,6 +33,7 @@ deadpool-redis = "0.5.2"
 itertools = "0.8.2"
 rand = "0.7.3"
 time = "0.1.42"
+pbkdf2 = "0.3.0"
 chrono = { version = "0.4.10", features = [ "serde" ]}
 phonenumber = "0.2.4"
 mailchecker = "3.3.4"
