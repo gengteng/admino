@@ -95,7 +95,7 @@ impl UserService {
         Ok(user_info)
     }
 
-    pub async fn add_password(&self, user_id: Id, password: String) -> Result<(), Error> {
+    pub async fn add_password(&self, user_id: Id, password: &str) -> Result<(), Error> {
         let pg = self.pg_pool.get().await?;
 
         if let Some(row) = pg
@@ -103,7 +103,7 @@ impl UserService {
             .await?
         {
             let username: String = row.get(0);
-            let hashed_pwd = hash_pwd(password).await?;
+            let hashed_pwd = hash_pwd(password)?;
 
             pg.execute("insert into user_auth(user_id, auth_type, identity, credential1) values($1, $2, $3, $4)",
                 &[&user_id, &AuthType::Username, &username, &hashed_pwd]).await?;
@@ -116,8 +116,8 @@ impl UserService {
 
     pub async fn sign_in_with_username(
         &self,
-        username: Username,
-        password: String,
+        username: &Username,
+        password: &str,
     ) -> Result<UserInfo, Error> {
         let pg = self.pg_pool.get().await?;
 
@@ -128,16 +128,15 @@ impl UserService {
             )
             .await?
         {
-            let UserAuth {
-                user_id,
-                credential1: hashed_pwd,
-                ..
-            } = UserAuth::from_row(row)?;
+            let user_auth = UserAuth::from_row(row)?;
 
-            check_pwd(password, hashed_pwd).await?;
+            check_pwd(password, &user_auth.credential1)?;
 
             let row = pg
-                .query_one("select * from user_info where id = $1", &[&user_id])
+                .query_one(
+                    "select * from user_info where id = $1",
+                    &[&user_auth.user_id],
+                )
                 .await?;
 
             Ok(UserInfo::from_row(row)?)

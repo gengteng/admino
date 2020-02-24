@@ -191,24 +191,19 @@ async fn sign_in(
     user: User,
     user_svc: web::Data<UserService>,
 ) -> Result<Json<UserInfo>, Error> {
-    let SignInParams {
-        auth_type,
-        identity,
-        credential1,
-        ..
-    } = sign_in_params.into_inner();
+    let sign_in_params = sign_in_params.into_inner();
 
-    let username = Username::new(&identity)?;
-
-    let user_info = match auth_type {
+    let user_info = match sign_in_params.auth_type {
         AuthType::Username => {
+            let username = Username::new(&sign_in_params.identity)?;
+
             user_svc
-                .sign_in_with_username(username, credential1)
+                .sign_in_with_username(&username, &sign_in_params.credential1)
                 .await?
         }
         AuthType::Phone => {
-            let phone = Phone::new(&identity)?;
-            let auth_code = AuthCode::new(&credential1)?;
+            let phone = Phone::new(&sign_in_params.identity)?;
+            let auth_code = AuthCode::new(&sign_in_params.credential1)?;
 
             user_svc.sign_in_with_phone(&phone, &auth_code).await?
         }
@@ -318,7 +313,7 @@ async fn add_password(
 ) -> Result<&'static str, Error> {
     if let Some(user_id) = user.get() {
         user_svc
-            .add_password(user_id, add_pwd_params.into_inner().password)
+            .add_password(user_id, &add_pwd_params.password)
             .await
             .empty_body()
     } else {
