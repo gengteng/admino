@@ -41,6 +41,47 @@ macro_rules! impl_de {
     };
 }
 
+macro_rules! sql_str_val {
+    ($t:ty, $n:expr) => {
+        impl fmt::Display for $t {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+                self.0.fmt(f)
+            }
+        }
+
+        impl<'a> FromSql<'a> for $t {
+            fn from_sql(ty: &Type, raw: &'a [u8]) -> Result<Self, Exception> {
+                let s = <&str as FromSql>::from_sql(ty, raw)?;
+                let phone =
+                    <$t>::from_str(s).map_err(|_| concat!("从数据库中读出的", $n, "格式错误"))?;
+                Ok(phone)
+            }
+
+            fn accepts(ty: &Type) -> bool {
+                <&str as FromSql>::accepts(ty)
+            }
+        }
+
+        impl ToSql for $t {
+            fn to_sql(&self, ty: &Type, out: &mut BytesMut) -> Result<IsNull, Exception>
+            where
+                Self: Sized,
+            {
+                self.0.to_sql(ty, out)
+            }
+
+            fn accepts(ty: &Type) -> bool
+            where
+                Self: Sized,
+            {
+                <&str as ToSql>::accepts(ty)
+            }
+
+            to_sql_checked!();
+        }
+    };
+}
+
 /// 6位数字验证码
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub struct AuthCode {
@@ -151,7 +192,7 @@ impl Serialize for Phone {
 
 impl_de!(Phone);
 
-/// Email 地址
+/// 电子邮箱
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Email(String);
 
@@ -173,44 +214,7 @@ impl Email {
     }
 }
 
-impl fmt::Display for Email {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        self.0.fmt(f)
-    }
-}
-
-impl<'a> FromSql<'a> for Email {
-    fn from_sql(ty: &Type, raw: &'a [u8]) -> Result<Self, Exception> {
-        let s = <&str as FromSql>::from_sql(ty, raw)?;
-        let email =
-            Email::from_str(s).map_err(|_| String::from("从数据库中读出的Email格式错误"))?;
-        Ok(email)
-    }
-
-    fn accepts(ty: &Type) -> bool {
-        <&str as FromSql>::accepts(ty)
-    }
-}
-
-impl ToSql for Email {
-    fn to_sql(&self, ty: &Type, out: &mut BytesMut) -> Result<IsNull, Exception>
-    where
-        Self: Sized,
-    {
-        let s = self.0.clone();
-        s.to_sql(ty, out)
-    }
-
-    fn accepts(ty: &Type) -> bool
-    where
-        Self: Sized,
-    {
-        <&str as ToSql>::accepts(ty)
-    }
-
-    to_sql_checked!();
-}
-
+sql_str_val!(Email, "电子邮箱");
 impl_se!(Email);
 impl_de!(Email);
 
@@ -222,7 +226,8 @@ impl FromStr for Username {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.chars().count() > 32 {
+        let len = s.chars().count();
+        if len < 6 || len > 32 {
             Err(Kind::INVALID_USERNAME.into())
         } else {
             Ok(Self(s.into()))
@@ -236,43 +241,6 @@ impl Username {
     }
 }
 
-impl fmt::Display for Username {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        self.0.fmt(f)
-    }
-}
-
-impl<'a> FromSql<'a> for Username {
-    fn from_sql(ty: &Type, raw: &'a [u8]) -> Result<Self, Exception> {
-        let s = <&str as FromSql>::from_sql(ty, raw)?;
-        let username =
-            Username::from_str(s).map_err(|_| String::from("从数据库中读出的用户名格式错误"))?;
-        Ok(username)
-    }
-
-    fn accepts(ty: &Type) -> bool {
-        <&str as FromSql>::accepts(ty)
-    }
-}
-
-impl ToSql for Username {
-    fn to_sql(&self, ty: &Type, out: &mut BytesMut) -> Result<IsNull, Exception>
-    where
-        Self: Sized,
-    {
-        let s = self.0.clone();
-        s.to_sql(ty, out)
-    }
-
-    fn accepts(ty: &Type) -> bool
-    where
-        Self: Sized,
-    {
-        <&str as ToSql>::accepts(ty)
-    }
-
-    to_sql_checked!();
-}
-
+sql_str_val!(Username, "用户名");
 impl_se!(Username);
 impl_de!(Username);
