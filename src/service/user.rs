@@ -78,17 +78,23 @@ impl UserService {
 
         let transaction = pg.transaction().await?;
 
+        let statement = transaction
+            .prepare("insert into user_info(username, nickname) values($1, $2) returning *")
+            .await?;
+
         let user_info = UserInfo::from_row(
             transaction
-                .query_one(
-                    "insert into user_info(username, nickname) values($1, $2) returning *",
-                    &[&username, &nickname],
-                )
+                .query_one(&statement, &[&username, &nickname])
                 .await?,
         )?;
 
-        transaction.execute("insert into user_auth(user_id, auth_type, identity, credential1) values($1, $2, $3, $4)",
-                            &[&user_info.id, &AuthType::Phone, phone, &""]).await?;
+        let statement = transaction
+            .prepare("insert into user_auth(user_id, auth_type, identity, credential1) values($1, $2, $3, $4)")
+            .await?;
+
+        transaction
+            .execute(&statement, &[&user_info.id, &AuthType::Phone, phone, &""])
+            .await?;
 
         transaction.commit().await?;
 
@@ -98,15 +104,23 @@ impl UserService {
     pub async fn add_password(&self, user_id: Id, password: &str) -> Result<(), Error> {
         let pg = self.pg_pool.get().await?;
 
-        if let Some(row) = pg
-            .query_opt("select username from user_info where id = $1", &[&user_id])
-            .await?
-        {
+        let select = pg
+            .prepare("select username from user_info where id = $1")
+            .await?;
+
+        if let Some(row) = pg.query_opt(&select, &[&user_id]).await? {
             let username: String = row.get(0);
             let hashed_pwd = hash_pwd(password)?;
 
-            pg.execute("insert into user_auth(user_id, auth_type, identity, credential1) values($1, $2, $3, $4)",
-                &[&user_id, &AuthType::Username, &username, &hashed_pwd]).await?;
+            let insert = pg
+                .prepare("insert into user_auth(user_id, auth_type, identity, credential1) values($1, $2, $3, $4)")
+                .await?;
+
+            pg.execute(
+                &insert,
+                &[&user_id, &AuthType::Username, &username, &hashed_pwd],
+            )
+            .await?;
 
             Ok(())
         } else {
@@ -121,23 +135,21 @@ impl UserService {
     ) -> Result<UserInfo, Error> {
         let pg = self.pg_pool.get().await?;
 
+        let statement = pg
+            .prepare("select * from user_auth where auth_type = $1 and identity = $2")
+            .await?;
+
         if let Some(row) = pg
-            .query_opt(
-                "select * from user_auth where auth_type = $1 and identity = $2",
-                &[&AuthType::Username, &username],
-            )
+            .query_opt(&statement, &[&AuthType::Username, &username])
             .await?
         {
             let user_auth = UserAuth::from_row(row)?;
 
             check_pwd(password, &user_auth.credential1)?;
 
-            let row = pg
-                .query_one(
-                    "select * from user_info where id = $1",
-                    &[&user_auth.user_id],
-                )
-                .await?;
+            let statement = pg.prepare("select * from user_info where id = $1").await?;
+
+            let row = pg.query_one(&statement, &[&user_auth.user_id]).await?;
 
             Ok(UserInfo::from_row(row)?)
         } else {
@@ -158,9 +170,12 @@ impl UserService {
         }
 
         let pg = self.pg_pool.get().await?;
-        if let Some(row) = pg
-            .query_opt("select * from user_info where id in (select user_id from user_auth where auth_type = $1 and identity = $2)",
-                       &[&AuthType::Phone, phone]).await? {
+
+        let statement = pg
+            .prepare("select * from user_info where id in (select user_id from user_auth where auth_type = $1 and identity = $2)")
+            .await?;
+
+        if let Some(row) = pg.query_opt(&statement, &[&AuthType::Phone, phone]).await? {
             Ok(UserInfo::from_row(row)?)
         } else {
             Err(Kind::LOGIN_FAILED.into())
@@ -170,10 +185,9 @@ impl UserService {
     pub async fn query_user_by_id(&self, id: Id) -> Result<UserInfo, Error> {
         let pg = self.pg_pool.get().await?;
 
-        if let Some(row) = pg
-            .query_opt("select * from user_info where id = $1", &[&id])
-            .await?
-        {
+        let statement = pg.prepare("select * from user_info where id = $1").await?;
+
+        if let Some(row) = pg.query_opt(&statement, &[&id]).await? {
             Ok(UserInfo::from_row(row)?)
         } else {
             Err(Kind::EMPTY_RESULT.into())
@@ -183,12 +197,13 @@ impl UserService {
     pub async fn query_user_roles(&self, user_id: Id) -> Result<Vec<Role>, Error> {
         let pg = self.pg_pool.get().await?;
 
-        let rows = pg
-            .query(
+        let statement = pg
+            .prepare(
                 "select * from role where id in (select role_id from user_role where user_id = $1)",
-                &[&user_id],
             )
             .await?;
+
+        let rows = pg.query(&statement, &[&user_id]).await?;
 
         let mut roles = Vec::with_capacity(rows.len());
 
@@ -202,9 +217,11 @@ impl UserService {
     pub async fn query_user_auth(&self, user_id: Id) -> Result<Vec<UserAuth>, Error> {
         let pg = self.pg_pool.get().await?;
 
-        let rows = pg
-            .query("select * from user_auth where user_id = $1", &[&user_id])
+        let statement = pg
+            .prepare("select * from user_auth where user_id = $1")
             .await?;
+
+        let rows = pg.query(&statement, &[&user_id]).await?;
 
         let mut auth = Vec::with_capacity(rows.len());
 
@@ -219,9 +236,11 @@ impl UserService {
     pub async fn query_user_perm(&self, user_id: Id) -> Result<Vec<RolePermission>, Error> {
         let pg = self.pg_pool.get().await?;
 
-        let rows = pg
-            .query("select * from role_permission where role_id in (select role_id from user_role where user_id = $1)", &[&user_id])
+        let statement = pg
+            .prepare("select * from role_permission where role_id in (select role_id from user_role where user_id = $1)")
             .await?;
+
+        let rows = pg.query(&statement, &[&user_id]).await?;
 
         let mut perms = Vec::with_capacity(rows.len());
 
