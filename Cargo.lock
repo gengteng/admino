@@ -12,7 +12,7 @@ dependencies = [
  "futures-sink",
  "log",
  "tokio",
- "tokio-util",
+ "tokio-util 0.2.0",
 ]
 
 [[package]]
@@ -680,9 +680,9 @@ dependencies = [
 
 [[package]]
 name = "deadpool-postgres"
-version = "0.5.4"
+version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9adedc6e12b70ccd917f4918c1aa763985aae1752a084a5c192c6cc9065e65c3"
+checksum = "45575d9acf1535dddcfc5841fd8f1776287bdc328f8d9e76531f4dfd2eb9788f"
 dependencies = [
  "async-trait",
  "config",
@@ -777,9 +777,9 @@ dependencies = [
 
 [[package]]
 name = "failure"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8273f13c977665c5db7eb2b99ae520952fe5ac831ae4cd09d80c4c7042b5ed9"
+checksum = "b8529c2421efa3066a5cbd8063d2244603824daccb6936b079010bb2aa89464b"
 dependencies = [
  "backtrace",
  "failure_derive",
@@ -787,9 +787,9 @@ dependencies = [
 
 [[package]]
 name = "failure_derive"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bc225b78e0391e4b8683440bf2e63c2deeeb2ce5189eab46e2b68c6d3725d08"
+checksum = "030a733c8287d6213886dd487564ff5c8f6aae10278b3588ed177f9d18f8d231"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1010,7 +1010,7 @@ dependencies = [
  "log",
  "slab",
  "tokio",
- "tokio-util",
+ "tokio-util 0.2.0",
 ]
 
 [[package]]
@@ -1572,9 +1572,9 @@ dependencies = [
 
 [[package]]
 name = "postgres-types"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eab1dd99401779ab03bc3872f196fb02c420e76f416c850be494a6f2d67287ad"
+checksum = "e634590e8812c500088d88db721195979223dabb05149f43cb50931d0ff5865d"
 dependencies = [
  "bytes",
  "chrono",
@@ -1724,7 +1724,7 @@ dependencies = [
  "pin-project-lite",
  "sha1",
  "tokio",
- "tokio-util",
+ "tokio-util 0.2.0",
  "url",
 ]
 
@@ -2069,9 +2069,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "0.2.11"
+version = "0.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fdd17989496f49cdc57978c96f0c9fe5e4a58a8bddc6813c449a4624f6a030b"
+checksum = "0fa5e81d6bc4e67fe889d5783bd2a128ab2e0cfa487e0be16b6a8d177b101616"
 dependencies = [
  "bytes",
  "fnv",
@@ -2090,18 +2090,18 @@ dependencies = [
 
 [[package]]
 name = "tokio-pg-mapper"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2f5e9a4317d79da8a9907e9cc8bb59dfd72d0a7258e9e5bc66f6602e04fb28b"
+checksum = "61a81a69cf680fc324b426f3c1615784b415d5215ada3a5a416191dfa2d67939"
 dependencies = [
  "tokio-postgres",
 ]
 
 [[package]]
 name = "tokio-pg-mapper-derive"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "efcc8708a1a8e559267624e63b1f94d5e0c0894c61b8cc0e6e351f4f24c853d5"
+checksum = "3b6945ad3b3b9f035740a75b59b8fa0708514485967649d931255cd5acd4e614"
 dependencies = [
  "quote",
  "syn",
@@ -2110,9 +2110,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-postgres"
-version = "0.5.2"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4794270a16f0095a02a752e6cbe9618ef440397af5eb409fa9eb826650ccbdb"
+checksum = "524da2f17264514c854ac770177bdb810f0db7e706ae69f143d6e6828e3c4fe3"
 dependencies = [
  "async-trait",
  "byteorder",
@@ -2127,7 +2127,7 @@ dependencies = [
  "postgres-protocol",
  "postgres-types",
  "tokio",
- "tokio-util",
+ "tokio-util 0.3.0",
 ]
 
 [[package]]
@@ -2135,6 +2135,20 @@ name = "tokio-util"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "571da51182ec208780505a32528fc5512a8fe1443ab960b3f2f3ef093cd16930"
+dependencies = [
+ "bytes",
+ "futures-core",
+ "futures-sink",
+ "log",
+ "pin-project-lite",
+ "tokio",
+]
+
+[[package]]
+name = "tokio-util"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af67cdce2b40f8dffb0ee04c853a24217b5d0d3e358f0f5ccc0b5332174ed9a8"
 dependencies = [
  "bytes",
  "futures-core",

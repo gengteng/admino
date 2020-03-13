@@ -19,13 +19,13 @@ actix-service = "1.0.5"
 
 futures = "0.3.4"
 
-tokio = { version = "0.2.11", features = [ "fs" ] }
-tokio-postgres = "0.5.2"
+tokio = { version = "0.2.13", features = [ "fs" ] }
+tokio-postgres = "0.5.3"
 deadpool = "0.5.1"
-deadpool-postgres = "0.5.4"
-postgres-types = { version = "0.1.0", features = [ "with-chrono-0_4", "derive" ] }
-tokio-pg-mapper = "0.1.4"
-tokio-pg-mapper-derive = "0.1.4"
+deadpool-postgres = "0.5.5"
+postgres-types = { version = "0.1.1", features = [ "with-chrono-0_4", "derive" ] }
+tokio-pg-mapper = "0.1.5"
+tokio-pg-mapper-derive = "0.1.5"
 
 redis = "0.15.1"
 deadpool-redis = "0.5.2"
@@ -41,7 +41,7 @@ serde = { version = "1.0.104", features = [ "derive" ] }
 serde_json = "1.0.48"
 toml = "0.5.6"
 hex-serde = "0.1.0"
-failure = "0.1.6"
+failure = "0.1.7"
 
 derive_more = "0.99.2"
 config = "0.10.1"
