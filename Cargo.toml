@@ -19,7 +19,7 @@ actix-service = "1.0.5"
 
 futures = "0.3.4"
 
-tokio = { version = "0.2.13", features = [ "fs" ] }
+tokio = { version = "1.18.5", features = [ "fs" ] }
 tokio-postgres = "0.5.3"
 deadpool = "0.5.1"
 deadpool-postgres = "0.5.5"
